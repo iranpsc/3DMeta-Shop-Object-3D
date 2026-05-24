@@ -17,11 +17,11 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => [
+    'allowed_methods' => ['*'],
+
+    'allowed_origins' => [
         'https://3d.irpsc.com',
     ],
-
-    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
