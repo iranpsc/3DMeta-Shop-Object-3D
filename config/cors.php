@@ -17,7 +17,9 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => [
+        'https://3d.irpsc.com',
+    ],
 
     'allowed_origins' => ['*'],
 
