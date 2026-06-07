@@ -19,7 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'https://3d.irpsc.com',
+        'https://world.metarang.com',
+    ],
 
     'allowed_origins_patterns' => [],
 
