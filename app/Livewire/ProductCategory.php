@@ -10,20 +10,33 @@ class ProductCategory extends Component
 {
     use WithPagination;
 
-    public $category_link, $category;
+    public array $category_link = [];
 
-    public function mount(string $category_link = null)
+    public function mount(?string $category_link = null): void
     {
-        $this->category_link = explode('/', $category_link);
-        $category = $this->category_link[count($this->category_link) - 1];
-
-        $this->category = Category::where('slug', $category)->with('children', 'image')->first();
+        $this->category_link = array_values(array_filter(explode('/', $category_link ?? '')));
     }
 
-    private function getProducts()
+    private function getCategory(): Category
     {
-        if (count($this->category->children ?? []) == 0) {
-            return $this->category->products()
+        $slug = $this->category_link[array_key_last($this->category_link)] ?? null;
+
+        $category = Category::query()
+            ->where('slug', $slug)
+            ->with('children', 'image', 'parent')
+            ->first();
+
+        if (! $category) {
+            abort(404);
+        }
+
+        return $category;
+    }
+
+    private function getProducts(Category $category)
+    {
+        if ($category->children->isEmpty()) {
+            return $category->products()
                 ->published()
                 ->createdByAdmin()
                 ->withCount('reviews')
@@ -33,13 +46,16 @@ class ProductCategory extends Component
                 ->paginate(16);
         }
 
-        return collect(); // Return an empty collection if there are children
+        return collect();
     }
 
     public function render()
     {
+        $category = $this->getCategory();
+
         return view('livewire.product-category', [
-            'products' => $this->getProducts(),
-        ])->title($this->category->name);
+            'category' => $category,
+            'products' => $this->getProducts($category),
+        ])->title($category->name);
     }
 }
