@@ -22,6 +22,8 @@ return [
     'allowed_origins' => [
         'https://3d.irpsc.com',
         'https://world.metarang.com',
+        'https://dev-reactjs.metarang.com',
+        'https://dev-nextjs.metarang.com',
     ],
 
     'allowed_origins_patterns' => [],
