@@ -45,6 +45,6 @@ class EditProduct extends Component
         return view('livewire.store-management.products.edit-product')
         ->with('categories', Category::select('id', 'name')->get())
         ->with('tags', Tag::all())
-        ->with('attributes', Attribute::all());
+        ->with('productAttributes', Attribute::all());
     }
 }

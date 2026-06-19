@@ -106,7 +106,7 @@
 
         <h4 class="mb-5 mt-5">ویژگی ها</h4>
 
-        @forelse ($attributes->chunk(2) as $items)
+        @forelse ($productAttributes->chunk(2) as $items)
             <div class="grid lg:grid-cols-2  gap-7 mt-5  " id="stockInputs">
                 @foreach ($items as $item)
                     <div class="w-full flex flex-col gap-7">
