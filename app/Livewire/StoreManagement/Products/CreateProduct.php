@@ -48,7 +48,7 @@ class CreateProduct extends Component
             ->with([
                 'categories' => Category::with('children')->get(),
                 'tags' => Tag::select('id', 'name')->get(),
-                'attributes' => Attribute::select('id', 'name')->get(),
+                'productAttributes' => Attribute::select('id', 'name')->get(),
             ]);
     }
 }
