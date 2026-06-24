@@ -10,16 +10,16 @@ class ProductCategory extends Component
 {
     use WithPagination;
 
-    public array $category_link = [];
+    public array $categorySegments = [];
 
     public function mount(?string $category_link = null): void
     {
-        $this->category_link = array_values(array_filter(explode('/', $category_link ?? '')));
+        $this->categorySegments = array_values(array_filter(explode('/', $category_link ?? '')));
     }
 
     private function getCategory(): Category
     {
-        $slug = $this->category_link[array_key_last($this->category_link)] ?? null;
+        $slug = $this->categorySegments[array_key_last($this->categorySegments)] ?? null;
 
         $category = Category::query()
             ->where('slug', $slug)

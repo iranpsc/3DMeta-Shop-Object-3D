@@ -75,7 +75,7 @@
                     <div class="grid lg:grid-cols-2 xl:grid-cols-4 gap-5 transition-[5s] duration-500 ">
                         @forelse ($category->children as $child)
                             @php
-                                $children_links = implode('/', array_merge($category_link, [$child->slug]));
+                                $children_links = implode('/', array_merge($categorySegments, [$child->slug]));
                             @endphp
                             <div class=" product">
                                 <div
