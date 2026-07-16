@@ -14,11 +14,11 @@ class BuildPackageController extends Controller
         $models = Product::with('attributes', 'images', 'file')
             ->whereHas('attributes', function ($query) use ($request) {
                 $query->where('slug', 'area')
-                    ->whereRaw('CAST(value AS FLOAT) <= ?', [$request->area]);
+                    ->whereRaw('CAST(`value` AS DECIMAL(12,2)) <= ?', [$request->area]);
             })
             ->whereHas('attributes', function ($query) use ($request) {
                 $query->where('slug', 'density')
-                    ->whereRaw('CAST(value AS INT) <= ?', [$request->density]);
+                    ->whereRaw('CAST(`value` AS SIGNED) <= ?', [$request->density]);
             })
             ->whereHas('attributes', function ($query) use ($request) {
                 $query->where('slug', 'karbari')
