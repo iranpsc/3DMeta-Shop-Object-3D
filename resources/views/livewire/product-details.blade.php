@@ -3,7 +3,7 @@
 @section('keywords', implode(',', ['کلمه کلیدی 1', 'کلمه کلیدی 2', $product->name]))
 @section('og:title', $product->name)
 @section('og:description', $product->short_description)
-@section('og:image', $product->images->first()->url)
+@section('og:image', $product->images->first()?->url)
 @section('og:type', 'product')
 
 @section('extera-schema')
@@ -14,7 +14,7 @@
       "name": "{{ $product->name }}",
       "sku": "{{ $product->sku }}",
       "category": "{{ $product->category->name }}",
-      "image": "{{ $product->images->first()->url }}",
+      "image": "{{ $product->images->first()?->url }}",
       "description": "{{ $product->short_description }}",
       "offers": {
         "@@type": "Offer",
