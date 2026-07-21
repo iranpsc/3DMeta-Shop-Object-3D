@@ -37,7 +37,13 @@
                 <x-form.text wire:model="form.price" name="form.price" label="قیمت عادی" />
                 <x-form.text wire:model="form.sale_price" name="form.sale_price" label="قیمت فروش ویژه" />
 
-                <x-form.file wire:model="form.images" name="form.images" label="تصاویر" multiple />
+                <div class="flex flex-col gap-3">
+                    <x-form.file wire:model="form.images" name="form.images" label="تصاویر" multiple />
+                    @foreach (collect($errors->get('form.images.*'))->flatten() as $message)
+                        <span
+                            style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                    @endforeach
+                </div>
 
                 <div class="flex flex-col gap-3 ">
                     <label for="fbx_file" class="form-col-label col-sm-4">فایل FBX</label>
@@ -85,6 +91,10 @@
                             <span
                                 style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
                         @enderror
+                        @foreach (collect($errors->get('form.tags.*'))->flatten() as $message)
+                            <span
+                                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                        @endforeach
                     </div>
                 </div>
 
@@ -106,6 +116,7 @@
 
         <h4 class="mb-5 mt-5">ویژگی ها</h4>
 
+        @php $attributeIndex = 0; @endphp
         @forelse ($productAttributes->chunk(2) as $items)
             <div class="grid lg:grid-cols-2  gap-7 mt-5  " id="stockInputs">
                 @foreach ($items as $item)
@@ -113,19 +124,33 @@
                         <div id="attribute-box-{{ $item->id }}" wire:key="{{ $item->id }}">
                             <div class="flex flex-col gap-5">
                                 <label for="attribute-{{ $item->id }}">{{ $item->name }}</label>
-                                <div class="w-full">
+                                <div class="w-full flex flex-col gap-5">
                                     <input type="text"
-                                        class="w-full bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 "
+                                        class="w-full bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 @error('form.attributes.' . $attributeIndex . '.value') is-invalid @enderror"
                                         id="attribute-{{ $item->id }}">
+                                    @error('form.attributes.' . $attributeIndex . '.value')
+                                        <span
+                                            style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                                    @enderror
+                                    @error('form.attributes.' . $attributeIndex . '.id')
+                                        <span
+                                            style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
                     </div>
+                    @php $attributeIndex++; @endphp
                 @endforeach
             </div>
         @empty
             <x-alert type="warning" message="ویژگی ای برای این دسته بندی ثبت نشده است." />
         @endforelse
+
+        @error('form.attributes')
+            <span
+                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+        @enderror
 
         <hr class="mt-5 mb-5" style="margin-bottom:20px">
 
@@ -167,9 +192,15 @@
             </div>
         </div>
 
-        <div class="mt-5" wire:ignore>
+        <div class="mt-5 flex flex-col gap-5">
             <label for="summernote2">توضیحات محصول</label>
-            <div id="summernote2" class="dark:text-gray-300"></div>
+            <div wire:ignore>
+                <div id="summernote2" class="dark:text-gray-300"></div>
+            </div>
+            @error('form.long_description')
+                <span
+                    style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+            @enderror
         </div>
 
         <x-button style="margin-top:50px" type="submit" id="save-btn">ذخیره</x-button>
