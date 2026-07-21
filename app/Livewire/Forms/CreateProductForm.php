@@ -58,7 +58,7 @@ class CreateProductForm extends Form
             'price' => 'required|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0|lte:price',
             'published' => 'required|boolean',
-            'images.*' => 'required|image|max:1024',
+            'images.*' => 'required|image|max:5120',
             'fbx_file' => 'required|array|min:1',
             'tags' => 'required|array|min:1',
             'tags.*' => 'required|exists:tags,id',
