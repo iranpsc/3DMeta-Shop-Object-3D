@@ -65,7 +65,10 @@ class ProductDetails extends Component
             ? $this->product->files()->findOrFail($fileId)
             : $this->product->files()->firstOrFail();
 
-        return response()->download(storage_path('app/' . $file->path), $file->name);
+        // Redirect to the signed download route so the file is streamed by the
+        // web server instead of being base64-encoded into the Livewire response
+        // (which exhausts memory for large files).
+        return $this->redirect($file->url, navigate: false);
     }
 
     public function toggleLike()
