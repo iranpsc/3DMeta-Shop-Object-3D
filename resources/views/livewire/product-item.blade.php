@@ -29,10 +29,11 @@
 
                 <div class="w-full flex justify-between gap-2 ">
                     @if ($product->is_free)
-                        <x-button wire:click="download({{ $product->id }})" color="light"
-                            style="display: flex; justify-content: center; align-items: center;border-radius: 10px; padding:10px 20px; gap:20px;color:#00a367;width: 60%; background-color: #06cc8360"><img src="{{ asset('img/svg/download.svg') }}" alt="download" class="w-6 svg">
+                        <x-download-files :product="$product" method="download" color="light"
+                            style="display: flex; justify-content: center; align-items: center;border-radius: 10px; padding:10px 20px; gap:20px;color:#00a367;width: 60%; background-color: #06cc8360">
+                            <img src="{{ asset('img/svg/download.svg') }}" alt="download" class="w-6 svg">
                             دانلود
-                        </x-button>
+                        </x-download-files>
                     @else
                         <button type="button" @disabled(in_array($product->id, array_column(session('cart', []), 'product_id'))) wire:click="addToCart"
                             onclick="cartAlert()"

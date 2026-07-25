@@ -118,7 +118,9 @@
                                                                             </div>
                                                                         </td>
                                                                         <td>
-                                                                            <x-button wire:click="download({{ $product->id }})"><i class="uil uil-download-alt"></i>دانلود</x-button>
+                                                                            <x-download-files :product="$product" method="download" :pass-product-id="true">
+                                                                                <i class="uil uil-download-alt"></i>دانلود
+                                                                            </x-download-files>
                                                                         </td>
                                                                     </tr>
                                                                 @endforeach

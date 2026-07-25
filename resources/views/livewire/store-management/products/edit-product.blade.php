@@ -1,4 +1,14 @@
 <div>
+    @push('styles')
+        <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('assets/vendor_assets/css/select2.min.css') }}">
+        <style>
+            [x-cloak] {
+                display: none !important;
+            }
+        </style>
+    @endpush
+
     <x-page title="ویرایش محصول">
 
         @session('success')
@@ -31,15 +41,17 @@
                 <x-form.text wire:model="form.price" name="form.price" label="قیمت عادی" />
                 <x-form.text wire:model="form.sale_price" name="form.sale_price" label="قیمت فروش ویژه" />
 
-                <div class="flex flex-col gap-5">
+                {{-- Alpine owns visibility; Livewire owns field values. Avoid class="hidden" + style.display conflicts. --}}
+                <div class="flex flex-col gap-5"
+                    x-data="{ open: {{ $form->stock_status || $form->quantity > 0 ? 'true' : 'false' }} }">
                     <div class="flex gap-5 items-center">
-                        <input type="checkbox" class="w-5 h-5" id="showStockInputs">
+                        <input type="checkbox" class="w-5 h-5" id="showStockInputs" x-model="open">
                         <label for="showStockInputs" class="flex flex-col gap-5">محصول برای متارنگ است؟</label>
                     </div>
 
-                    <div id="stockInputs" class="flex flex-col gap-5 hidden">
+                    <div id="stockInputs" class="flex flex-col gap-5" x-show="open" x-cloak>
                         <x-form.select wire:model="form.stock_status" name="form.stock_status" label="وضعیت انبار">
-                            <option value="1" selected>موجود</option>
+                            <option value="1">موجود</option>
                             <option value="0">ناموجود</option>
                         </x-form.select>
 
@@ -65,15 +77,18 @@
 
                 <div>
                     <x-form.file wire:model="form.images" name="form.images" label="تصاویر محصول" multiple />
-                    <div class="grid md:grid-cols-2 2xl:grid-cols-4 gap-5 p-2  ">
+                    <div class="grid md:grid-cols-2 2xl:grid-cols-4 gap-5 p-2">
                         @foreach ($this->form->product->images as $image)
                             <div
-                                class=" w-full bg-[#F8F9FA] dark:bg-[#4A4E7C] aspect-square rounded-lg overflow-hidden border relative">
-                                <img src="{{ $image->url }}" alt=""
-                                    class="relative">
-                                <div class="absolute  z-50 w-[60%] flex gap-1" style="top: 4px;right: 4px;">
-                                    <button class="rounded-full  w-1/2 flex items-center justify-center"
-                                        style="background-color: red" wire:click="removeImage({{ $image->id }})">
+                                class="w-full bg-[#F8F9FA] dark:bg-[#4A4E7C] aspect-square rounded-lg overflow-hidden border relative"
+                                wire:key="product-image-{{ $image->id }}">
+                                <img src="{{ $image->url }}" alt="" class="relative">
+                                <div class="absolute z-50 w-[60%] flex gap-1" style="top: 4px;right: 4px;">
+                                    <button type="button"
+                                        class="rounded-full w-1/2 flex items-center justify-center"
+                                        style="background-color: red"
+                                        wire:click="removeImage({{ $image->id }})"
+                                        wire:confirm="آیا از حذف این تصویر مطمئن هستید؟">
                                         <div class="flex justify-center items-center w-full">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                 stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -88,38 +103,54 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3 ">
-                    <label for="fbx_file" class="form-col-label col-sm-4">فایل FBX</label>
-                    <div class="flex flex-col gap-5">
-                        <span class="form-control w-full  bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 border-0"
-                            id="fbx_file" wire:ignore>انتخاب فایل</span>
-                        @error('form.fbx_file')
-                            <span
-                                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
-                        @enderror
+                <div class="flex flex-col gap-7">
+                    <div class="flex flex-col gap-3">
+                        <x-file-upload-modal id="edit-product-files" wire-property="form.files"
+                            label="افزودن فایل‌های جدید" />
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <label class="form-col-label col-sm-4">فایل‌های موجود</label>
+                        <div class="flex flex-col gap-2">
+                            @forelse ($form->getProduct()->files as $file)
+                                <div class="flex justify-between items-center gap-3 bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-3"
+                                    wire:key="product-file-{{ $file->id }}">
+                                    <span class="text-sm break-all">{{ $file->name }}
+                                        @if ($file->size)
+                                            ({{ $file->size }})
+                                        @endif
+                                    </span>
+                                    <button type="button" wire:click="removeFile({{ $file->id }})"
+                                        wire:confirm="آیا از حذف این فایل مطمئن هستید؟"
+                                        class="text-red-500 text-sm font-bold">حذف</button>
+                                </div>
+                            @empty
+                                <span class="text-sm text-gray-500">فایلی ثبت نشده است.</span>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-10 mb-10 flex flex-col gap-4">
-                    <label for="tags" class="flex flex-col gap-5">برچسب ها</label>
-                    <div class="col-sm-8">
-                        <div wire:ignore>
-                            <select name="tags" id="select-tag"
-                                class="bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 space-y-2 " label="برچسب ها"
-                                multiple="multiple">
-                                <option value="">انتخاب برچسب ها</option>
-                                @foreach ($tags as $tag)
-                                    <option value="{{ $tag->id }}" @selected(in_array($tag->id, $form->product->tags->pluck('id')->toArray()))>{{ $tag->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        @error('form.tags')
-                            <span
-                                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
-                        @enderror
+                <div class="mt-10 mb-10 flex flex-col gap-4 w-full" wire:ignore>
+                    <label for="select-tag" class="flex flex-col gap-5">برچسب ها</label>
+                    <div class="w-full">
+                        <select name="tags" id="select-tag"
+                            class="bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 space-y-2 w-full"
+                            style="width: 100%;" multiple="multiple">
+                            <option value="">انتخاب برچسب ها</option>
+                            @foreach ($tags as $tag)
+                                <option value="{{ $tag->id }}"
+                                    @selected(in_array($tag->id, $form->product->tags->pluck('id')->toArray()))>
+                                    {{ $tag->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
+                @error('form.tags')
+                    <span
+                        style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                @enderror
 
             </div>
         </div>
@@ -128,28 +159,31 @@
 
         <h4 class="mb-5 mt-5">ویژگی ها</h4>
 
-        @foreach ($productAttributes->chunk(2) as $items)
-            <div class="grid lg:grid-cols-2  gap-7 mt-5  ">
-                @foreach ($items as $item)
-                    <div class="w-full flex flex-col gap-7">
-                        <div id="attribute-box-{{ $item->id }}" wire:key="{{ $item->id }}">
-                            <div class="flex flex-col gap-5">
-                                <label for="attribute-{{ $item->id }}"
-                                    class="col-sm-4 form-col-label">{{ $item->name }}</label>
-                                <div class="col-sm-8">
-                                    <input type="text"
-                                        class="w-full bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 "
-                                        id="attribute-{{ $item->id }}"
-                                        value="{{ $form->product->attributes->contains($item)
-                                            ? $form->product->attributes->where('id', $item->id)->first()->pivot->value
-                                            : '' }}">
+        {{-- Plain inputs are JS-collected on save; remorph after removeImage/removeFile would wipe edits. --}}
+        <div wire:ignore>
+            @foreach ($productAttributes->chunk(2) as $items)
+                <div class="grid lg:grid-cols-2 gap-7 mt-5">
+                    @foreach ($items as $item)
+                        <div class="w-full flex flex-col gap-7">
+                            <div id="attribute-box-{{ $item->id }}">
+                                <div class="flex flex-col gap-5">
+                                    <label for="attribute-{{ $item->id }}"
+                                        class="col-sm-4 form-col-label">{{ $item->name }}</label>
+                                    <div class="col-sm-8">
+                                        <input type="text"
+                                            class="w-full bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4"
+                                            id="attribute-{{ $item->id }}"
+                                            value="{{ $form->product->attributes->contains($item)
+                                                ? $form->product->attributes->where('id', $item->id)->first()->pivot->value
+                                                : '' }}">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                @endforeach
-            </div>
-        @endforeach
+                    @endforeach
+                </div>
+            @endforeach
+        </div>
 
         <hr>
 
@@ -159,7 +193,7 @@
                 <div class="flex flex-col gap-5">
                     <label for="short_desciption">توضیحات کوتاه</label>
                     <textarea wire:model="form.short_description" name="form.short_description"
-                        class="form-control @error('form.short_description') is-invalid @enderror  w-full text-gray-400 py-3 rounded-[10px] border-2 border-gray-300 ring-offset-0 focus:ring-offset-0 ring-0 !focus:ring-0 bg-transparent"
+                        class="form-control @error('form.short_description') is-invalid @enderror w-full text-gray-400 py-3 rounded-[10px] border-2 border-gray-300 ring-offset-0 focus:ring-offset-0 ring-0 !focus:ring-0 bg-transparent"
                         id="short_desciption" rows="3"></textarea>
                     @error('form.short_description')
                         <span
@@ -169,7 +203,7 @@
                 <div class="flex flex-col gap-5">
                     <label for="meta_desciption">توضیحات متا</label>
                     <textarea wire:model="form.meta_description" name="form.meta_description"
-                        class="form-control @error('form.short_description') is-invalid @enderror  w-full text-gray-400 py-3 rounded-[10px] border-2 border-gray-300 ring-offset-0 focus:ring-offset-0 ring-0 !focus:ring-0 bg-transparent"
+                        class="form-control @error('form.meta_description') is-invalid @enderror w-full text-gray-400 py-3 rounded-[10px] border-2 border-gray-300 ring-offset-0 focus:ring-offset-0 ring-0 !focus:ring-0 bg-transparent"
                         id="meta_desciption" rows="3"></textarea>
                     @error('form.meta_description')
                         <span
@@ -180,7 +214,7 @@
                 <div class="flex flex-col gap-5">
                     <label for="meta_keywords">کلمات کلیدی متا</label>
                     <textarea wire:model="form.meta_keywords" name="form.meta_keywords"
-                        class="form-control @error('form.short_description') is-invalid @enderror  w-full text-gray-400 py-3 rounded-[10px] border-2 border-gray-300 ring-offset-0 focus:ring-offset-0 ring-0 !focus:ring-0 bg-transparent"
+                        class="form-control @error('form.meta_keywords') is-invalid @enderror w-full text-gray-400 py-3 rounded-[10px] border-2 border-gray-300 ring-offset-0 focus:ring-offset-0 ring-0 !focus:ring-0 bg-transparent"
                         id="meta_keywords" rows="3"></textarea>
                     @error('form.meta_keywords')
                         <span
@@ -190,10 +224,14 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-5" wire:ignore>
+        <div class="mt-5 flex flex-col gap-5" wire:ignore>
             <label for="summernote2">توضیحات کامل</label>
-            <div id="summernote2"></div>
+            <div id="summernote2" class="dark:text-gray-300"></div>
         </div>
+        @error('form.long_description')
+            <span
+                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+        @enderror
 
         <x-button type="submit" id="update-btn" style="margin-top:50px">بروزرسانی</x-button>
 
@@ -203,130 +241,97 @@
 
 @script
     <script>
-        let updateBtn = document.getElementById('update-btn');
-        let tags;
-        let attributes = [];
-        let fbxFileBrowse = document.getElementById('fbx_file');
-        let fbxFile;
+        let tags = null;
 
-        $('#summernote2').summernote('code', $wire.form.long_description);
+        function ensureSummernote() {
+            const $el = $('#summernote2');
+            if (!$el.length) {
+                return;
+            }
 
-        $('#select-tag').select2({
-            placeholder: 'انتخاب برچسب ها',
-            allowClear: true
+            if (!$el.next('.note-editor').length) {
+                $el.summernote({
+                    height: 300,
+                    disableDragAndDrop: true,
+                });
+                $el.summernote('code', $wire.form.long_description || '');
+            }
+        }
+
+        function ensureSelect2() {
+            const $el = $('#select-tag');
+            if (!$el.length) {
+                return;
+            }
+
+            if (!$el.hasClass('select2-hidden-accessible')) {
+                $el.select2({
+                    placeholder: 'انتخاب برچسب ها',
+                    allowClear: true,
+                    width: '100%',
+                });
+            }
+
+            $el.off('change.select2-sync select2:unselect.select2-sync')
+                .on('change.select2-sync select2:unselect.select2-sync', function() {
+                    tags = $el.select2('val');
+                });
+        }
+
+        function ensureJsWidgets() {
+            ensureSummernote();
+            ensureSelect2();
+        }
+
+        ensureJsWidgets();
+
+        // After Livewire remorphs (save / validation), restore JS widgets if DOM was replaced.
+        Livewire.hook('morph.updated', ({ component }) => {
+            if (component.id !== $wire.$id) {
+                return;
+            }
+            ensureJsWidgets();
         });
 
-        $('#select-tag').on('change', function(e) {
-            var data = $('#select-tag').select2("val");
-            tags = data;
-        });
+        const updateBtn = document.getElementById('update-btn');
 
-        $('#select-tag').on('select2:unselect', function(e) {
-            var data = $('#select-tag').select2("val");
-            tags = data;
-        });
-
-        updateBtn.addEventListener('click', function() {
-
+        updateBtn.addEventListener('click', async function() {
             updateBtn.classList.add('disabled');
             updateBtn.innerText = 'در حال ذخیره سازی ...';
 
-            setTimeout(function() {
-                updateBtn.classList.remove('disabled');
-                updateBtn.innerText = 'ذخیره';
-            }, 3000);
+            try {
+                ensureJsWidgets();
 
-            // Get summer note value
-            $wire.set('form.long_description', $('#summernote2').summernote('code'));
+                const longDescription = $('#summernote2').summernote('code');
+                const selectedTags = tags || $('#select-tag').select2('val') || [];
 
-            // if tags is empty get tags from #select-tag
-            if (!tags) {
-                tags = $('#select-tag').select2("val");
-            }
+                const attributes = [];
+                document.querySelectorAll('[id^="attribute-box-"]').forEach(function(box) {
+                    const attributeId = box.id.split('-')[2];
+                    const attributeInput = document.getElementById('attribute-' + attributeId);
+                    const attributeValue = attributeInput ? attributeInput.value : '';
 
-            $wire.set('form.tags', tags);
-
-            let attributeBoxes = document.querySelectorAll('[id^="attribute-box-"]');
-
-            attributeBoxes.forEach(function(box) {
-                let attributeId = box.id.split('-')[2];
-                let attributeValue = document.getElementById('attribute-' + attributeId).value;
-
-                if (attributeValue) {
-                    // if attrribute with the same id exists replace it
-                    let attributeIndex = attributes.findIndex(attribute => attribute.id == attributeId);
-
-                    if (attributeIndex != -1) {
-                        attributes[attributeIndex].value = attributeValue;
-                        return;
+                    if (attributeValue) {
+                        attributes.push({
+                            id: attributeId,
+                            name: box.querySelector('label').innerText,
+                            value: attributeValue,
+                        });
                     }
+                });
 
-                    attributes.push({
-                        id: attributeId,
-                        name: box.querySelector('label').innerText,
-                        value: attributeValue,
-                    });
-                }
-            });
+                // Defer sync so intermediate remorphs don't destroy Select2/Summernote before save.
+                // @see https://livewire.laravel.com/docs/4.x/javascript — $set(name, value, live=false)
+                $wire.$set('form.long_description', longDescription, false);
+                $wire.$set('form.tags', selectedTags, false);
+                $wire.$set('form.attributes', attributes, false);
 
-            $wire.set('form.attributes', attributes);
-
-            $wire.set('form.fbx_file', fbxFile);
-
-            $wire.call('update');
-        });
-
-        let showStockInputs = document.getElementById('showStockInputs');
-        let stockInputs = document.getElementById('stockInputs');
-
-        showStockInputs.addEventListener('click', function() {
-            if (showStockInputs.checked) {
-                stockInputs.style.display = 'block';
-            } else {
-                stockInputs.style.display = 'none';
+                await $wire.call('update');
+                ensureJsWidgets();
+            } finally {
+                updateBtn.classList.remove('disabled');
+                updateBtn.innerText = 'بروزرسانی';
             }
-        });
-
-        // Initialize Resumable.js
-        let resumable = new Resumable({
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
-            target: '/upload', // Replace with your upload endpoint
-            chunkSize: 1 * 1024 * 1024, // 1MB chunk size
-            simultaneousUploads: 4, // Number of simultaneous uploads
-            testChunks: false, // Disable chunk testing
-            throttleProgressCallbacks: 1, // Trigger progress event every 1 second
-            maxFiles: 1, // Max number of files
-        });
-
-        resumable.assignBrowse(document.getElementById('fbx_file'));
-
-        // Add event listeners
-        resumable.on('fileAdded', function(file) {
-            // Start uploading the file
-            resumable.upload();
-        });
-
-        resumable.on('fileProgress', function(file) {
-            // Handle file upload progress
-            var progress = Math.floor(file.progress() * 100);
-
-            // Update the progress percentage
-            fbxFileBrowse.innerText = 'در حال آپلود ' + progress + '%';
-        });
-
-        resumable.on('fileSuccess', function(file, message) {
-            message = JSON.parse(message);
-            fbxFileBrowse.innerText = message['name'];
-
-            fbxFile = message;
-        });
-
-        resumable.on('fileError', function(file, message) {
-            // Handle file upload error
-            console.error('File upload error:', message);
         });
     </script>
 @endscript

@@ -227,16 +227,18 @@
                         <div>
                             <p class="text-[#8E9ABC] dark:text-white">فرمت قابل دانلود</p>
                         </div>
-                        <div class="flex gap-4">
-                            <div
-                                class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-[#1A1A18] text-[#3A4980] dark:text-white">
-                                <p>png </p>
-                            </div>
-                            <div
-                                class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-[#1A1A18] text-[#3A4980] dark:text-white">
-
-                                <p>fbx </p>
-                            </div>
+                        <div class="flex gap-4 flex-wrap">
+                            @forelse ($product->files->map(fn ($file) => strtolower(pathinfo($file->name, PATHINFO_EXTENSION)))->unique()->filter() as $extension)
+                                <div
+                                    class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-[#1A1A18] text-[#3A4980] dark:text-white">
+                                    <p>{{ $extension }}</p>
+                                </div>
+                            @empty
+                                <div
+                                    class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-[#1A1A18] text-[#3A4980] dark:text-white">
+                                    <p>—</p>
+                                </div>
+                            @endforelse
                         </div>
                     </div>
                     <div class="flex  gap-2   justify-between ">
@@ -269,11 +271,11 @@
                         @endif
                         <div class="w-[60%] md:w-[30%] lg:w-[40%]">
                             @if ($product->is_free)
-                                <x-button wire:click="download" color="info" size="block"
-                                    style="display: flex; justify-content: center; align-items: center;border-radius: 900px ; gap:20px"><img
-                                        src="{{ asset('img/svg/download.svg') }}" alt="download" class="svg">
+                                <x-download-files :product="$product" method="download" size="block"
+                                    style="display: flex; justify-content: center; align-items: center;border-radius: 900px ; gap:20px">
+                                    <img src="{{ asset('img/svg/download.svg') }}" alt="download" class="svg">
                                     دانلود
-                                </x-button>
+                                </x-download-files>
                             @elseif($product->stock_status && $product->quantity > 1)
                                 <button type="button" @disabled(session('cart') && in_array($product->id, array_column(session('cart'), 'product_id'))) id="addToCartBtn"
                                     class="bg-[#E3000F] text-white text-sm font-bold text-center w-full h-12  rounded-full flex items-center gap-3 flex-row-reverse justify-center">
@@ -374,7 +376,7 @@
             </div>
             <div class="flex flex-wrap gap-3 mt-6">
                 @foreach ($product->tags as $tag)
-                    <a href="/products?tag={{ $tag->slug }}"
+                    <a href="{{ route('tags.show', $tag) }}"
                         class="py-3 pb-[13px] px-5 rounded-[10px] w-max bg-[#ffffffa8] dark:bg-[#1A1A18] text-[#8E9ABC] dark:text-white/70 text-sm">{{ $tag->name }}</a>
                 @endforeach
             </div>

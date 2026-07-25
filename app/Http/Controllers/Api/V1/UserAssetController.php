@@ -100,18 +100,18 @@ class UserAssetController extends Controller
      */
     public function getProduct(Product $product)
     {
-        $product = $product->load('file', 'attributes', 'attributes', 'images')
+        $product = $product->load('files', 'attributes', 'attributes', 'images')
             ->loadAvg('reviews', 'rating');
 
         return response()->json(['data' => [
             'id' => $product->id,
             'name' => $product->name,
-            'file' => $product->file->url,
+            'files' => $product->files->map(fn ($file) => $file->url),
             'rating' => $product->reviews_avg_rating,
             'images' => $product->images->map(function ($image) {
                 return $image->url;
             }),
-            'attributes' => $product->attributes->map(function ($attribute) {
+            'attributes' => $product->attributes->map(function ($attribute) : array {
                 return [
                     'id' => $attribute->id,
                     'name' => $attribute->name,
@@ -231,7 +231,7 @@ class UserAssetController extends Controller
 
         $avatar = $user->products()
             ->where('product_id', $avatarId)
-            ->with('file', 'attributes', 'attributes', 'images')
+            ->with('files', 'attributes', 'attributes', 'images')
             ->withAvg('reviews', 'rating')
             ->withPivot('quantity')
             ->first();
@@ -241,7 +241,7 @@ class UserAssetController extends Controller
         return response()->json(['data' => [
             'id' => $avatar->id,
             'name' => $avatar->name,
-            'file' => $avatar->file->url,
+            'files' => $avatar->files->map(fn ($file) => $file->url),
             'quantity' => $avatar->pivot->quantity,
             'rating' => $avatar->reviews_avg_rating,
             'images' => $avatar->images->map(function ($image) {

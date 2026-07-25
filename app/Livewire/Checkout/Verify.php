@@ -107,7 +107,7 @@ class Verify extends Component
 
         $this->order = $this->transaction->order;
 
-        $this->order->load('products');
+        $this->order->load('products.files');
 
         $this->order->update([
             'status' => $this->status,
@@ -145,16 +145,20 @@ class Verify extends Component
      * @param Product $product The product to download.
      * @return \Illuminate\Http\Response The file download response.
      */
-    public function download(Product $product)
+    public function download(Product $product, ?int $fileId = null)
     {
         $this->authorize('download', $product);
+
+        $file = $fileId
+            ? $product->files()->findOrFail($fileId)
+            : $product->files()->firstOrFail();
 
         $product->users()->updateExistingPivot(Auth::id(), [
             'download_count' => $product->users()->find(auth()->id())->pivot->download_count + 1,
             'downloaded_at' => now(),
         ]);
 
-        return response()->download(storage_path('app/' . $product->file->path));
+        return response()->download(storage_path('app/' . $file->path), $file->name);
     }
 
     #[Title('تایید پرداخت')]

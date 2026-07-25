@@ -11,7 +11,7 @@ class BuildPackageController extends Controller
 {
     public function getBuildPackage(Request $request)
     {
-        $models = Product::with('attributes', 'images', 'file')
+        $models = Product::with('attributes', 'images', 'files')
             ->whereHas('attributes', function ($query) use ($request) {
                 $query->where('slug', 'area')
                     ->whereRaw('CAST(`value` AS DECIMAL(12,2)) <= ?', [$request->area]);

@@ -109,9 +109,9 @@ class Avatars extends Component
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%');
             })
-            ->whereHas('file')
+            ->whereHas('files')
             ->whereHas('latestImage')
-            ->with('file', 'latestImage')
+            ->with('files', 'latestImage')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 

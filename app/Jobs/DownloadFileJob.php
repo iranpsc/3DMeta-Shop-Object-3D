@@ -41,7 +41,7 @@ class DownloadFileJob implements ShouldQueue
                 'path' => 'avatars/' . $filename,
             ]);
         } else {
-            $this->product->file()->create([
+            $this->product->files()->create([
                 'name' => $filename,
                 'path' => $directory . $filename,
             ]);

@@ -151,13 +151,13 @@ class Product extends Model implements Sitemapable
     }
 
     /**
-     * Get the file for the product.
+     * Get the files for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function file()
+    public function files()
     {
-        return $this->hasOne(File::class);
+        return $this->hasMany(File::class);
     }
 
     /**

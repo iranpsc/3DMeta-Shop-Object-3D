@@ -13,6 +13,8 @@ class CreateProductForm extends Form
 {
     use WithFileUploads;
 
+    public const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'fbx', 'gltf', 'glb', 'bin'];
+
     public $category_id;
     public $sku;
     public $name;
@@ -27,7 +29,7 @@ class CreateProductForm extends Form
     public $sale_price;
     public $published = 1;
     public $images = [];
-    public $fbx_file;
+    public $files = [];
     public $tags = [];
     public $attributes = [];
     public $meta_description;
@@ -38,6 +40,7 @@ class CreateProductForm extends Form
         return [
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:255|unique:products,sku',
             'slug' => 'required|string|max:255|unique:products,slug',
             'short_description' => 'required|string|max:255',
             'long_description' => 'required|string|max:5000',
@@ -59,7 +62,20 @@ class CreateProductForm extends Form
             'sale_price' => 'nullable|numeric|min:0|lte:price',
             'published' => 'required|boolean',
             'images.*' => 'required|image|max:5120',
-            'fbx_file' => 'required|array|min:1',
+            'files' => 'required|array|min:1|max:20',
+            'files.*.path' => 'required|string',
+            'files.*.name' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    $extension = strtolower(pathinfo((string) $value, PATHINFO_EXTENSION));
+                    if (! in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+                        $fail(__('The file extension is not allowed.'));
+                    }
+                },
+            ],
+            'files.*.mime_type' => 'required|string',
+            'files.*.size' => 'required|string',
             'tags' => 'required|array|min:1',
             'tags.*' => 'required|exists:tags,id',
             'attributes' => 'required|array|min:1',
@@ -102,35 +118,15 @@ class CreateProductForm extends Form
 
         $uploadPath = $this->getUploadPath();
 
-        if (!file_exists(storage_path('app/' . $uploadPath))) {
+        if (! file_exists(storage_path('app/' . $uploadPath))) {
             mkdir(storage_path('app/' . $uploadPath), 0777, true);
         }
 
-        // Security check for file path traversal
-        $inputPath = $this->fbx_file['path'] . $this->fbx_file['name'];
-        if (strpos($inputPath, '..') !== false || strpos($this->fbx_file['path'], 'upload/') !== 0) {
-            $this->addError('fbx_file', 'Invalid file path.');
-            return;
+        foreach ($this->files as $index => $uploadedFile) {
+            if (! $this->moveUploadedFile($product, $uploadedFile, $uploadPath, $index)) {
+                return;
+            }
         }
-
-        $originalPath = storage_path('app/' . $this->fbx_file['path'] . $this->fbx_file['name']);
-
-        // Verify the file exists and is inside the upload directory
-        if (!file_exists($originalPath) || !str_starts_with(realpath($originalPath), storage_path('app/upload'))) {
-             $this->addError('fbx_file', 'File not found or invalid path.');
-             return;
-        }
-
-        $newPath = storage_path('app/' . $uploadPath . '/' . $this->fbx_file['name']);
-
-        rename($originalPath, $newPath);
-
-        $product->file()->create([
-            'name' => $this->fbx_file['name'],
-            'path' => $uploadPath . '/' . $this->fbx_file['name'],
-            'type' => $this->fbx_file['mime_type'],
-            'size' => $this->fbx_file['size'],
-        ]);
 
         $product->tags()->attach($this->tags);
 
@@ -141,6 +137,35 @@ class CreateProductForm extends Form
         }
 
         $this->reset();
+    }
+
+    private function moveUploadedFile(Product $product, array $uploadedFile, string $uploadPath, int $index): bool
+    {
+        $inputPath = $uploadedFile['path'] . $uploadedFile['name'];
+        if (strpos($inputPath, '..') !== false || strpos($uploadedFile['path'], 'upload/') !== 0) {
+            $this->addError("files.{$index}", 'Invalid file path.');
+            return false;
+        }
+
+        $originalPath = storage_path('app/' . $uploadedFile['path'] . $uploadedFile['name']);
+
+        if (! file_exists($originalPath) || ! str_starts_with(realpath($originalPath), storage_path('app/upload'))) {
+            $this->addError("files.{$index}", 'File not found or invalid path.');
+            return false;
+        }
+
+        $newPath = storage_path('app/' . $uploadPath . '/' . $uploadedFile['name']);
+
+        rename($originalPath, $newPath);
+
+        $product->files()->create([
+            'name' => $uploadedFile['name'],
+            'path' => $uploadPath . '/' . $uploadedFile['name'],
+            'type' => $uploadedFile['mime_type'],
+            'size' => $uploadedFile['size'],
+        ]);
+
+        return true;
     }
 
     private function getUploadPath()

@@ -68,7 +68,7 @@
                                     allow="camera *; microphone *; clipboard-write"></iframe>
                             </div>
                         </div>
-                        
+
                     </div>
                 </div>
 
@@ -96,7 +96,11 @@
                                             alt="تصویر آواتار">
                                     </a>
                                 </td>
-                                <td><a href="{{ $product->file->url }}">دانلود</a></td>
+                                <td>
+                                    @foreach ($product->files as $file)
+                                        <a href="{{ $file->url }}" class="block">دانلود {{ $file->name ?? $loop->iteration }}</a>
+                                    @endforeach
+                                </td>
                                 <td>{{ jdate($product->created_at)->format('Y/m/d') }}</td>
                             </tr>
                         @endforeach

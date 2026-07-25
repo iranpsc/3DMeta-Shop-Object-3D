@@ -18,6 +18,17 @@ class File extends Model
         'size',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (File $file) {
+            $fullPath = storage_path('app/' . $file->path);
+
+            if (is_file($fullPath)) {
+                unlink($fullPath);
+            }
+        });
+    }
+
     /**
      * Get the product that owns the File
      *

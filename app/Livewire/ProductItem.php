@@ -29,13 +29,18 @@ class ProductItem extends Component
         session()->flash('message', $this->product->name . ' به سبد خرید اضافه شد.');
     }
 
-    public function download()
+    public function download(?int $fileId = null)
     {
         if (!auth()->check()) {
             return $this->redirectRoute('login');
         }
 
         $this->authorize('download', $this->product);
-        return response()->download(storage_path('app/' . $this->product->file->path));
+
+        $file = $fileId
+            ? $this->product->files()->findOrFail($fileId)
+            : $this->product->files()->firstOrFail();
+
+        return response()->download(storage_path('app/' . $file->path), $file->name);
     }
 }

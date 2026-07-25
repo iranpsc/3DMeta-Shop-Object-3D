@@ -45,16 +45,8 @@
                     @endforeach
                 </div>
 
-                <div class="flex flex-col gap-3 ">
-                    <label for="fbx_file" class="form-col-label col-sm-4">فایل FBX</label>
-                    <div class="flex flex-col gap-5">
-                        <span class="form-control w-full  bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 border-0"
-                            id="fbx_file" wire:ignore>انتخاب فایل</span>
-                        @error('form.fbx_file')
-                            <span
-                                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
-                        @enderror
-                    </div>
+                <div class="flex flex-col gap-3">
+                    <x-file-upload-modal id="create-product-files" wire-property="form.files" label="فایل‌ها" />
                 </div>
 
                 <div class="flex flex-col gap-5">
@@ -74,29 +66,27 @@
                     </div>
                 </div>
 
-                <div class="mt-10 mb-10 flex flex-col gap-4 w-full">
+                <div class="mt-10 mb-10 flex flex-col gap-4 w-full" wire:ignore>
                     <label for="tags" class="flex flex-col gap-5">برچسب ها</label>
                     <div class="flex flex-col gap-5 w-full">
-                        <div wire:ignore>
-                            <select name="tags" id="select-tag"
-                                class="bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 space-y-2  w-full"
-                                style="width: 100%;" label="برچسب ها" multiple="multiple" style="height:150px">
-                                <option value="">انتخاب برچسب ها</option>
-                                @foreach ($tags as $tag)
-                                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        @error('form.tags')
-                            <span
-                                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
-                        @enderror
-                        @foreach (collect($errors->get('form.tags.*'))->flatten() as $message)
-                            <span
-                                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
-                        @endforeach
+                        <select name="tags" id="select-tag"
+                            class="bg-[#F8F9FA] dark:bg-[#4A4E7C] rounded-[10px] p-4 space-y-2 w-full"
+                            style="width: 100%;" label="برچسب ها" multiple="multiple">
+                            <option value="">انتخاب برچسب ها</option>
+                            @foreach ($tags as $tag)
+                                <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
+                @error('form.tags')
+                    <span
+                        style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                @enderror
+                @foreach (collect($errors->get('form.tags.*'))->flatten() as $message)
+                    <span
+                        style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+                @endforeach
 
                 <x-form.select wire:model="form.customer_can_add_review" name="form.customer_can_add_review"
                     label="مشتری می تواند دیدگاه بنویسد؟">
@@ -192,16 +182,14 @@
             </div>
         </div>
 
-        <div class="mt-5 flex flex-col gap-5">
+        <div class="mt-5 flex flex-col gap-5" wire:ignore>
             <label for="summernote2">توضیحات محصول</label>
-            <div wire:ignore>
-                <div id="summernote2" class="dark:text-gray-300"></div>
-            </div>
-            @error('form.long_description')
-                <span
-                    style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
-            @enderror
+            <div id="summernote2" class="dark:text-gray-300"></div>
         </div>
+        @error('form.long_description')
+            <span
+                style="color:red;padding:14px;background-color:rgba(207, 117, 117, 0.47);border-radius:10px">{{ $message }}</span>
+        @enderror
 
         <x-button style="margin-top:50px" type="submit" id="save-btn">ذخیره</x-button>
 
@@ -211,127 +199,106 @@
 
 @script
     <script>
-        let saveBtn = document.getElementById('save-btn');
-        let tags;
-        let attributes = [];
-        let fbxFileBrowse = document.getElementById('fbx_file');
-        let fbx_file;
+        let tags = null;
 
-        saveBtn.addEventListener('click', function() {
+        function ensureSummernote() {
+            const $el = $('#summernote2');
+            if (!$el.length) {
+                return;
+            }
+
+            if (!$el.next('.note-editor').length) {
+                $el.summernote({
+                    height: 300,
+                    disableDragAndDrop: true,
+                });
+                $el.summernote('code', $wire.form.long_description || '');
+            }
+        }
+
+        function ensureSelect2() {
+            const $el = $('#select-tag');
+            if (!$el.length) {
+                return;
+            }
+
+            if (!$el.hasClass('select2-hidden-accessible')) {
+                $el.select2({
+                    placeholder: 'انتخاب برچسب ها',
+                    allowClear: true,
+                    width: '100%',
+                });
+            }
+
+            $el.off('change.select2-sync select2:unselect.select2-sync')
+                .on('change.select2-sync select2:unselect.select2-sync', function() {
+                    tags = $el.select2('val');
+                });
+        }
+
+        function ensureJsWidgets() {
+            ensureSummernote();
+            ensureSelect2();
+        }
+
+        ensureJsWidgets();
+
+        Livewire.hook('morph.updated', ({ component }) => {
+            if (component.id !== $wire.$id) {
+                return;
+            }
+            ensureJsWidgets();
+        });
+
+        const saveBtn = document.getElementById('save-btn');
+        const showStockInputs = document.getElementById('showStockInputs');
+        const stockInputs = document.getElementById('stockInputs');
+
+        if (showStockInputs && stockInputs) {
+            showStockInputs.addEventListener('click', function() {
+                if (showStockInputs.checked) {
+                    stockInputs.classList.remove('hidden');
+                } else {
+                    stockInputs.classList.add('hidden');
+                }
+            });
+        }
+
+        saveBtn.addEventListener('click', async function() {
             saveBtn.classList.add('disabled');
             saveBtn.innerText = 'در حال ذخیره سازی ...';
 
-            setTimeout(function() {
+            try {
+                ensureJsWidgets();
+
+                const longDescription = $('#summernote2').summernote('code');
+                const selectedTags = tags || $('#select-tag').select2('val') || [];
+
+                const attributes = [];
+                document.querySelectorAll('[id^="attribute-box-"]').forEach(function(box) {
+                    const attributeId = box.id.split('-')[2];
+                    const attributeInput = document.getElementById('attribute-' + attributeId);
+                    const attributeValue = attributeInput ? attributeInput.value : '';
+
+                    if (attributeValue) {
+                        attributes.push({
+                            id: attributeId,
+                            name: box.querySelector('label').innerText,
+                            value: attributeValue,
+                        });
+                    }
+                });
+
+                $wire.$set('form.long_description', longDescription, false);
+                $wire.$set('form.tags', selectedTags, false);
+                $wire.$set('form.attributes', attributes, false);
+
+                await $wire.call('save');
+                ensureJsWidgets();
+            } finally {
                 saveBtn.classList.remove('disabled');
                 saveBtn.innerText = 'ذخیره';
-            }, 3000);
-
-            $wire.set('form.attributes', attributes);
-
-            // Get summer note value
-            $wire.set('form.long_description', $('#summernote2').summernote('code'));
-
-            $wire.set('form.tags', tags);
-
-            let attributeBoxes = document.querySelectorAll('[id^="attribute-box-"]');
-
-            attributeBoxes.forEach(function(box) {
-                let attributeId = box.id.split('-')[2];
-                let attributeValue = document.getElementById('attribute-' + attributeId).value;
-
-                if (attributeValue) {
-                    // if attrribute with the same id exists replace it
-                    let attributeIndex = attributes.findIndex(attribute => attribute.id == attributeId);
-
-                    if (attributeIndex != -1) {
-                        attributes[attributeIndex].value = attributeValue;
-                        return;
-                    }
-
-                    attributes.push({
-                        id: attributeId,
-                        name: box.querySelector('label').innerText,
-                        value: attributeValue
-                    });
-                }
-            });
-
-            $wire.set('form.attributes', attributes);
-
-            $wire.set('form.fbx_file', fbx_file);
-
-            $wire.call('save');
-        });
-
-        $('#summernote2').summernote({
-            height: 300,
-        });
-
-        $('#select-tag').select2({
-            placeholder: 'انتخاب برچسب ها',
-            allowClear: true
-        });
-
-        $('#select-tag').on('change', function(e) {
-            tags = $('#select-tag').select2("val");
-        });
-
-        $('#select-tag').on('select2:unselect', function(e) {
-            tags = $('#select-tag').select2("val");
-        });
-
-
-        let showStockInputs = document.getElementById('showStockInputs');
-        let stockInputs = document.getElementById('stockInputs');
-
-        showStockInputs.addEventListener('click', function() {
-            if (showStockInputs.checked) {
-                stockInputs.classList.remove('hidden');
-            } else {
-                stockInputs.classList.add('hidden');
             }
-        });
-
-        // Initialize Resumable.js
-        let resumable = new Resumable({
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
-            target: '/upload', // Replace with your upload endpoint
-            chunkSize: 1 * 1024 * 1024, // 1MB chunk size
-            simultaneousUploads: 4, // Number of simultaneous uploads
-            testChunks: false, // Disable chunk testing
-            throttleProgressCallbacks: 1, // Trigger progress event every 1 second
-            maxFiles: 1, // Max number of files
-        });
-
-        resumable.assignBrowse(document.getElementById('fbx_file'));
-
-        // Add event listeners
-        resumable.on('fileAdded', function(file) {
-            // Start uploading the file
-            resumable.upload();
-        });
-
-        resumable.on('fileProgress', function(file) {
-            // Handle file upload progress
-            var progress = Math.floor(file.progress() * 100);
-
-            // Update the progress percentage
-            fbxFileBrowse.innerText = 'در حال آپلود ' + progress + '%';
-        });
-
-        resumable.on('fileSuccess', function(file, message) {
-            message = JSON.parse(message);
-            fbxFileBrowse.innerText = message['name'];
-
-            fbx_file = message;
-        });
-
-        resumable.on('fileError', function(file, message) {
-            // Handle file upload error
-            console.error('File upload error:', message);
         });
     </script>
 @endscript
