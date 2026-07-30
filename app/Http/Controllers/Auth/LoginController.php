@@ -115,6 +115,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return to_route('home');
+        return redirect()->away(config('app.frontend_url') ?: route('home'));
     }
 }

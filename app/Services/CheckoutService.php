@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutService
 {
-    private const PRICE_MULTIPLIER = 10;
+    private const PRICE_MULTIPLIER = 1;
 
     public function __construct(
         private CartService $cart,
