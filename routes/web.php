@@ -142,4 +142,10 @@ Route::post('/callback', function (Request $request) {
     $query = http_build_query($request->all());
 
     return redirect()->away("{$frontendUrl}/verify?{$query}");
-})->name('callback');
+})->name('callback')->withoutMiddleware([
+    // Bank POSTs are cross-site, so SameSite=Lax omits the session cookie.
+    // Starting a new session here would Set-Cookie and wipe the user's auth session
+    // before the browser follows the redirect to the Next.js /verify page.
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+]);

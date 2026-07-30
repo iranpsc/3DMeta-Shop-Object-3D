@@ -143,12 +143,31 @@ class CheckoutTest extends TestCase
 
     public function test_verify_endpoint_requires_token(): void
     {
-        $user = User::factory()->create();
-
-        $this->actingAs($user)
-            ->withHeaders($this->statefulApiHeaders())
+        $this->withHeaders($this->statefulApiHeaders())
             ->getJson('/api/v1/checkout/verify')
             ->assertStatus(422);
+    }
+
+    public function test_guest_can_call_verify_endpoint(): void
+    {
+        $this->mock(CheckoutService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('verify')
+                ->once()
+                ->andReturn([
+                    'success' => true,
+                    'status' => 0,
+                    'reference_id' => 'ref-1',
+                    'tracking_id' => 12345678901,
+                    'order_id' => '1',
+                    'products' => [],
+                ]);
+        });
+
+        $this->withHeaders($this->statefulApiHeaders())
+            ->getJson('/api/v1/checkout/verify?Token=abc&status=0')
+            ->assertOk()
+            ->assertJsonPath('data.success', true)
+            ->assertJsonPath('data.reference_id', 'ref-1');
     }
 
     public function test_authenticated_user_can_initiate_order_repay(): void

@@ -45,9 +45,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/reviews/{review}/replies', [ProductController::class, 'storeReviewReply']);
 
         Route::post('/checkout/payment', [CheckoutController::class, 'payment']);
-        Route::get('/checkout/verify', [CheckoutController::class, 'verify']);
         Route::post('/orders/{order}/pay', [CheckoutController::class, 'repay']);
     });
+
+    // Token-gated: IPG return often arrives without the Sanctum session cookie
+    // (cross-site POST → SameSite=Lax). Auth is optional; ownership is checked when present.
+    Route::get('/checkout/verify', [CheckoutController::class, 'verify']);
 
     Route::middleware(['auth:sanctum', 'verified'])->prefix('user')->group(function () {
         Route::get('/dashboard', [UserDashboardController::class, 'show']);
