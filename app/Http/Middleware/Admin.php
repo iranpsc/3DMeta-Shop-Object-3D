@@ -16,6 +16,13 @@ class Admin
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->user()->hasRole('admin')) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'data' => null,
+                    'message' => 'شما اجازه دسترسی به این صفحه را ندارید.',
+                ], 403);
+            }
+
             return redirect()->back()->with('error', 'شما اجازه دسترسی به این صفحه را ندارید.');
         }
 

@@ -49,7 +49,7 @@
 
 
                             </div>
-                            
+
 
                             <div class="flex flex-col gap-7 w-full mt-2 md:mt-5">
                                 <x-form.textarea name="message" placeholder="پیام خود را اینجا بنویسید..." label=""

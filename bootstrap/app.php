@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo('/dashboard');
 
+        // Sanctum SPA cookie auth for Next.js (cross-subdomain / localhost)
+        $middleware->statefulApi();
+
         $middleware->preventRequestForgery(except: [
             '/callback',
         ]);
@@ -26,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.oncebasic' => AuthenticateWithOnceBasic::class,
         ]);
     })
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

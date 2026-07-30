@@ -138,7 +138,8 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::post('/callback', function (Request $request) {
-    $data = http_build_query($request->all());
+    $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+    $query = http_build_query($request->all());
 
-    return to_route('verify', $data);
+    return redirect()->away("{$frontendUrl}/verify?{$query}");
 })->name('callback');
