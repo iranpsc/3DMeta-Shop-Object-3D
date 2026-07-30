@@ -148,4 +148,7 @@ Route::post('/callback', function (Request $request) {
     // before the browser follows the redirect to the Next.js /verify page.
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    // Even when /callback is CSRF-excepted, PreventRequestForgery still calls
+    // session()->token() afterward to set the XSRF-TOKEN cookie on the response.
+    \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
 ]);
