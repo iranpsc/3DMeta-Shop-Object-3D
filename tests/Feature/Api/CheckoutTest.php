@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -84,6 +85,18 @@ class CheckoutTest extends TestCase
                 'data.redirect_url',
                 route('login', ['intended' => 'http://localhost:3000/checkout'])
             );
+    }
+
+    public function test_checkout_account_ignores_untrusted_intended_url(): void
+    {
+        config(['app.frontend_url' => 'http://localhost:3000']);
+
+        $this->postJson('/api/v1/checkout/account', [
+            'action' => 'login',
+            'intended' => 'https://evil.example/phish',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.redirect_url', route('login'));
     }
 
     public function test_checkout_account_returns_register_redirect_url(): void
@@ -170,6 +183,48 @@ class CheckoutTest extends TestCase
             ->assertJsonPath('data.reference_id', 'ref-1');
     }
 
+    public function test_payment_with_empty_cart_returns_422(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withHeaders($this->statefulApiHeaders())
+            ->postJson('/api/v1/checkout/payment')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'سبد خرید شما خالی است.');
+    }
+
+    public function test_verify_with_unknown_token_returns_422(): void
+    {
+        $this->withHeaders($this->statefulApiHeaders())
+            ->getJson('/api/v1/checkout/verify?Token=unknown-token&status=0')
+            ->assertStatus(422);
+    }
+
+    public function test_repay_validation_error_returns_422(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::create([
+            'user_id' => $user->id,
+            'amount' => 800000,
+            'tracking_id' => 12345678999,
+            'status' => -1,
+        ]);
+
+        $this->mock(CheckoutService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('initiateOrderRepayment')
+                ->once()
+                ->andThrow(ValidationException::withMessages([
+                    'payment' => 'پرداخت با مشکل مواجه شد.',
+                ]));
+        });
+
+        $this->actingAs($user)
+            ->withHeaders($this->statefulApiHeaders())
+            ->postJson("/api/v1/orders/{$order->id}/pay")
+            ->assertStatus(422);
+    }
+
     public function test_authenticated_user_can_initiate_order_repay(): void
     {
         $user = User::factory()->create();
@@ -199,5 +254,28 @@ class CheckoutTest extends TestCase
             ->postJson("/api/v1/orders/{$order->id}/pay")
             ->assertOk()
             ->assertJsonPath('data.redirect_url', 'https://pec.shaparak.ir/NewIPG/?Token=54321');
+    }
+
+    public function test_verify_without_success_omits_message(): void
+    {
+        $this->mock(CheckoutService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('verify')
+                ->once()
+                ->andReturn([
+                    'success' => false,
+                    'status' => -1,
+                    'reference_id' => null,
+                    'tracking_id' => 1,
+                    'order_id' => '1',
+                    'products' => [],
+                ]);
+        });
+
+        $response = $this->withHeaders($this->statefulApiHeaders())
+            ->getJson('/api/v1/checkout/verify?Token=abc&status=-1')
+            ->assertOk()
+            ->assertJsonPath('data.success', false);
+
+        $this->assertArrayNotHasKey('message', $response->json());
     }
 }

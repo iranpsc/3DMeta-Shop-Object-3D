@@ -335,4 +335,116 @@ class ProductTest extends TestCase
             ->assertJsonPath('data.user_can_download', false)
             ->assertJsonPath('data.files.0.url', null);
     }
+
+    public function test_store_filters_returns_categories(): void
+    {
+        $category = Category::factory()->create(['slug' => 'store-filter']);
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'published' => true,
+            'created_by' => 'admin',
+        ]);
+
+        $this->getJson('/api/v1/products/store-filters')
+            ->assertOk()
+            ->assertJsonPath('data.categories.0.slug', 'store-filter');
+    }
+
+    public function test_products_index_supports_price_range_and_sorts(): void
+    {
+        $category = Category::factory()->create();
+
+        $cheap = Product::factory()->create([
+            'category_id' => $category->id,
+            'published' => true,
+            'created_by' => 'admin',
+            'name' => 'Cheap',
+            'sku' => 'CHEAP-1',
+            'price' => 10000,
+        ]);
+        $expensive = Product::factory()->create([
+            'category_id' => $category->id,
+            'published' => true,
+            'created_by' => 'admin',
+            'name' => 'Expensive',
+            'sku' => 'EXP-1',
+            'price' => 500000,
+        ]);
+
+        $this->getJson('/api/v1/products?price_min=5000&price_max=20000&sort=cheapest')
+            ->assertOk()
+            ->assertJsonPath('data.0.sku', 'CHEAP-1');
+
+        $this->getJson('/api/v1/products?sort=most-expensive')
+            ->assertOk()
+            ->assertJsonPath('data.0.sku', 'EXP-1');
+
+        $this->getJson('/api/v1/products?sort=most-sales')
+            ->assertOk();
+
+        $this->assertNotNull($cheap->id);
+        $this->assertNotNull($expensive->id);
+    }
+
+    public function test_products_index_supports_tags_array_filter(): void
+    {
+        $category = Category::factory()->create();
+        $tag = Tag::factory()->create(['slug' => 'metal']);
+        $match = Product::factory()->create([
+            'category_id' => $category->id,
+            'published' => true,
+            'created_by' => 'admin',
+            'sku' => 'TAG-ARR-1',
+        ]);
+        $match->tags()->attach($tag);
+
+        $this->getJson('/api/v1/products?tags[]=metal')
+            ->assertOk()
+            ->assertJsonPath('data.0.sku', 'TAG-ARR-1');
+    }
+
+    public function test_product_show_returns_empty_similar_when_no_category(): void
+    {
+        $product = Product::factory()->create([
+            'category_id' => null,
+            'published' => true,
+            'created_by' => 'admin',
+            'sku' => 'NO-CAT',
+        ]);
+
+        // Force null category if factory always sets one
+        $product->forceFill(['category_id' => null])->save();
+
+        $this->getJson('/api/v1/products/NO-CAT')
+            ->assertOk()
+            ->assertJsonPath('data.similar_products', []);
+    }
+
+    public function test_purchased_user_can_review_paid_product(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'published' => true,
+            'created_by' => 'admin',
+            'sku' => 'REV-PAID',
+            'price' => 100000,
+            'customer_can_add_review' => true,
+        ]);
+        $user->products()->attach($product->id, ['quantity' => 1]);
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/products/REV-PAID/reviews', [
+                'comment' => 'Bought and reviewed',
+                'rating' => 5,
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('reviews', [
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Bought and reviewed',
+        ]);
+    }
 }

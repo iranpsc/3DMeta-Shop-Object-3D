@@ -143,4 +143,16 @@ class LoginControllerTest extends TestCase
 
         $response->assertRedirect($intended);
     }
+
+    public function test_logout_invalidates_session(): void
+    {
+        config(['app.frontend_url' => 'http://localhost:3000']);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('logout'))
+            ->assertRedirect('http://localhost:3000');
+
+        $this->assertGuest();
+    }
 }

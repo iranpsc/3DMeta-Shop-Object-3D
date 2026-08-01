@@ -20,4 +20,18 @@ class RegisterTest extends TestCase
 
         $response->assertRedirect($expectedUrl);
     }
+
+    public function test_register_stores_trusted_intended_url(): void
+    {
+        config([
+            'app.oauth_client_id' => 'test-client-id',
+            'app.oauth_server_url' => 'https://accounts.example.com',
+            'app.frontend_url' => 'http://localhost:3000',
+        ]);
+
+        $this->get(route('register', ['intended' => 'http://localhost:3000/profile']))
+            ->assertRedirect();
+
+        $this->assertSame('http://localhost:3000/profile', session('url.intended'));
+    }
 }

@@ -156,7 +156,7 @@ class AdminProductService
     {
         Gate::authorize('update', $product);
 
-        if ($image->product_id !== $product->id) {
+        if ($image->imageable_id !== $product->id || $image->imageable_type !== Product::class) {
             abort(403);
         }
 

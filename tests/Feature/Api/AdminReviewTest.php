@@ -90,8 +90,19 @@ class AdminReviewTest extends TestCase
         $reply = ReviewReply::first();
 
         $this->actingAsAdminApiUser($admin)
+            ->getJson("/api/v1/admin/reviews/{$review->id}/replies")
+            ->assertOk()
+            ->assertJsonPath('data.replies.0.comment', 'Admin reply');
+
+        $this->actingAsAdminApiUser($admin)
             ->postJson("/api/v1/admin/review-replies/{$reply->id}/approve")
             ->assertOk()
             ->assertJsonPath('message', 'پاسخ با موفقیت تایید شد.');
+
+        $this->actingAsAdminApiUser($admin)
+            ->deleteJson("/api/v1/admin/review-replies/{$reply->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('review_replies', ['id' => $reply->id]);
     }
 }

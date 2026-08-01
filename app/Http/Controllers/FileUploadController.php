@@ -25,7 +25,7 @@ class FileUploadController extends Controller
     public function upload(Request $request)
     {
         // create the file receiver
-        $receiver = new FileReceiver("file", $request, HandlerFactory::classFromRequest($request));
+        $receiver = $this->makeReceiver($request);
 
         // check if the upload is success, throw exception or return response you need
         if ($receiver->isUploaded() === false) {
@@ -49,6 +49,14 @@ class FileUploadController extends Controller
         return response()->json([
             "done" => $handler->getPercentageDone(),
         ]);
+    }
+
+    /**
+     * @return \Pion\Laravel\ChunkUpload\Receiver\FileReceiver
+     */
+    protected function makeReceiver(Request $request)
+    {
+        return new FileReceiver("file", $request, HandlerFactory::classFromRequest($request));
     }
 
     /**

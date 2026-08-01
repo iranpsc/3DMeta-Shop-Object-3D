@@ -37,7 +37,12 @@ class UserProfileTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.name', 'Updated Name')
-            ->assertJsonPath('message', 'اطلاعات کاربری شما با موفقیت بروزرسانی شدند.');
+            ->assertJsonPath('message', 'اطلاعات کاربری شما با موفقیت بروزرسانی شدند.')
+            ->assertJsonPath('info', 'ایمیل تایید حساب کاربری برای شما ارسال شد.');
+
+        $user->refresh();
+        $this->assertNull($user->email_verified_at);
+        Notification::assertSentTo($user, \Illuminate\Auth\Notifications\VerifyEmail::class);
     }
 
     public function test_profile_update_validates_phone(): void

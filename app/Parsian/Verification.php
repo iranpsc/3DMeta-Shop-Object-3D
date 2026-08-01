@@ -2,8 +2,6 @@
 
 namespace App\Parsian;
 
-use SoapClient;
-
 class Verification
 {
     /**
@@ -33,11 +31,11 @@ class Verification
      *
      * @return VerificationResponse The response from the payment gateway.
      */
-    public function send()
+    public function send(?object $client = null)
     {
         $url = "https://pec.shaparak.ir/NewIPGServices/Confirm/ConfirmService.asmx?WSDL";
 
-        $client = new SoapClient($url);
+        $client ??= new \SoapClient($url);
 
         $params = array(
             'LoginAccount' => $this->merchantId,

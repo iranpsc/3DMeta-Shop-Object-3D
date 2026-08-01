@@ -100,7 +100,7 @@ class LoginController extends Controller
             return redirect()->to($intendedUrl);
         }
 
-        return redirect()->away($frontendUrl ?: route('home'));
+        return redirect()->away($frontendUrl ?: '/');
     }
 
     /**
@@ -115,6 +115,8 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->away(config('app.frontend_url') ?: route('home'));
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+
+        return redirect()->away($frontendUrl ?: '/');
     }
 }

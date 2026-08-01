@@ -2,7 +2,6 @@
 
 namespace App\Parsian;
 
-use SoapClient;
 use App\Parsian\RequestResponse;
 
 class Request
@@ -55,7 +54,7 @@ class Request
      *
      * @return RequestResponse The response from the payment gateway.
      */
-    public function send()
+    public function send(?object $client = null)
     {
         $url = "https://pec.shaparak.ir/NewIPGServices/Sale/SaleService.asmx?WSDL";
 
@@ -68,7 +67,7 @@ class Request
             "Originator" => $this->originator
 	    );
 
-        $client = new SoapClient($url);
+        $client ??= new \SoapClient($url);
 
         $result = $client->SalePaymentRequest(["requestData" => $params]);
 

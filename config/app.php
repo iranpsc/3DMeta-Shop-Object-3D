@@ -65,8 +65,8 @@ return [
     | Frontend URL (Next.js SPA)
     |--------------------------------------------------------------------------
     |
-    | After OAuth login the browser is redirected here instead of a Laravel
-    | Livewire route. Local default is the Next.js dev server.
+    | After OAuth login the browser is redirected here. Local default is the
+    | Next.js dev server.
     |
     */
 

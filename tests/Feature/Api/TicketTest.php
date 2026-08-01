@@ -85,6 +85,8 @@ class TicketTest extends TestCase
 
     public function test_user_can_respond_to_ticket(): void
     {
+        \Illuminate\Support\Facades\Notification::fake();
+
         $user = User::factory()->create();
         $ticket = Ticket::create([
             'user_id' => $user->id,
@@ -103,6 +105,68 @@ class TicketTest extends TestCase
             'ticket_id' => $ticket->id,
             'message' => 'Thanks for the update',
         ]);
+
+        \Illuminate\Support\Facades\Notification::assertSentTo(
+            $user,
+            \App\Notifications\TicketResponse::class
+        );
+    }
+
+    public function test_admin_can_list_all_tickets(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'User ticket',
+            'message' => 'Body',
+            'priority' => 'low',
+        ]);
+
+        $this->actingAsVerifiedApiUser($admin)
+            ->getJson('/api/v1/tickets')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.title', 'User ticket');
+    }
+
+    public function test_user_can_create_ticket_with_attachment(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAsVerifiedApiUser($user)
+            ->post('/api/v1/tickets', [
+                'title' => 'With attachment',
+                'message' => 'Ticket body text',
+                'priority' => 'high',
+                'attachment' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $ticket = Ticket::where('title', 'With attachment')->first();
+        $this->assertNotNull($ticket->attachment);
+    }
+
+    public function test_user_can_update_ticket_with_attachment(): void
+    {
+        $user = User::factory()->create();
+        $ticket = Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'Old title',
+            'message' => 'Old message',
+            'priority' => 'low',
+        ]);
+
+        $this->actingAsVerifiedApiUser($user)
+            ->post("/api/v1/tickets/{$ticket->id}", [
+                '_method' => 'PUT',
+                'title' => 'New title',
+                'message' => 'New message',
+                'priority' => 'medium',
+                'attachment' => \Illuminate\Http\UploadedFile::fake()->image('shot.jpg'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->assertNotNull($ticket->fresh()->attachment);
     }
 
     public function test_admin_can_delete_ticket(): void

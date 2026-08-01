@@ -29,6 +29,12 @@ class UserAvatarsTest extends TestCase
     {
         Bus::fake();
         $user = User::factory()->create();
+        \App\Models\Tag::factory()->create();
+        \App\Models\Attribute::factory()->create();
+        Product::factory()->create([
+            'category_id' => Category::factory()->create()->id,
+            'sku' => '3D-rgb-10010',
+        ]);
 
         $this->actingAsVerifiedApiUser($user)
             ->postJson('/api/v1/user/avatars', [
@@ -42,5 +48,48 @@ class UserAvatarsTest extends TestCase
 
         Bus::assertDispatched(DownloadFileJob::class, 2);
         $this->assertDatabaseHas('products', ['name' => 'My Avatar', 'created_by' => 'user']);
+        $avatar = Product::where('name', 'My Avatar')->first();
+        $this->assertSame('3D-rgb-10011', $avatar->sku);
+        $this->assertTrue($avatar->tags()->exists());
+        $this->assertTrue($avatar->attributes()->exists());
+    }
+
+    public function test_verified_user_can_search_avatars(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create(['slug' => 'avatar', 'name' => 'Avatars']);
+        $match = Product::factory()->create([
+            'category_id' => $category->id,
+            'name' => 'Searchable Avatar',
+            'created_by' => 'user',
+        ]);
+        $match->images()->create(['path' => 'avatars/s.png']);
+        $match->files()->create([
+            'name' => 'a.glb',
+            'path' => 'products/a.glb',
+            'type' => 'model/gltf-binary',
+            'size' => '1 MB',
+        ]);
+        $user->products()->attach($match->id);
+
+        $other = Product::factory()->create([
+            'category_id' => $category->id,
+            'name' => 'Other Avatar',
+            'created_by' => 'user',
+        ]);
+        $other->images()->create(['path' => 'avatars/o.png']);
+        $other->files()->create([
+            'name' => 'b.glb',
+            'path' => 'products/b.glb',
+            'type' => 'model/gltf-binary',
+            'size' => '1 MB',
+        ]);
+        $user->products()->attach($other->id);
+
+        $this->actingAsVerifiedApiUser($user)
+            ->getJson('/api/v1/user/avatars?search=Searchable')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.name', 'Searchable Avatar')
+            ->assertJsonPath('data.meta.total', 1);
     }
 }
