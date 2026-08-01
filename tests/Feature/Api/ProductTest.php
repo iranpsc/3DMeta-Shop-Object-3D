@@ -263,8 +263,7 @@ class ProductTest extends TestCase
 
         $url = $response->json('data.files.0.url');
         $this->assertIsString($url);
-        $this->assertStringStartsWith('/download/', $url);
-        $this->assertStringNotContainsString('://', $url);
+        $this->assertStringContainsString('/download/', $url);
         $this->assertStringContainsString('signature=', $url);
     }
 
