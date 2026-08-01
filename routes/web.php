@@ -130,7 +130,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 Route::get('/download/{file}', function (Request $request, File $file) {
     Log::info(storage_path("app/{$file->path}"));
     return response()->download(storage_path("app/{$file->path}"), $file->name);
-})->middleware('signed')->name('files.download');
+})->middleware('signed:relative')->name('files.download');
 
 Route::middleware(['auth'])->group(function () {
     Route::post('/upload', [FileUploadController::class, 'upload'])->name('files.upload');

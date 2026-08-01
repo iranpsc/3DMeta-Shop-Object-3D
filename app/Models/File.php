@@ -40,12 +40,15 @@ class File extends Model
     }
 
     /**
-     * Generate a signed download url for the file
+     * Generate a signed download url for the file.
+     *
+     * Relative (path-only) so the browser keeps the current page scheme.
+     * Absolute http:// URLs from APP_URL cause Mixed Content blocks on HTTPS.
      *
      * @return string
      */
     public function getUrlAttribute()
     {
-        return URL::signedRoute('files.download', ['file' => $this->id]);
+        return URL::signedRoute('files.download', ['file' => $this->id], absolute: false);
     }
 }
