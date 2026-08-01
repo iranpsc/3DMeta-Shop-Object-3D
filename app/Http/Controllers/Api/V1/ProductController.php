@@ -14,7 +14,6 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\Tag;
 use App\Services\CategoryService;
-use App\Services\ContactService;
 use App\Services\ProductService;
 use App\Services\ReviewService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

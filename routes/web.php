@@ -26,7 +26,6 @@ Route::middleware('guest')->prefix('auth')->group(function () {
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
 Route::get('/download/{file}', function (Request $request, File $file) {
-    Log::info(storage_path("app/{$file->path}"));
     return response()->download(storage_path("app/{$file->path}"), $file->name);
 })->middleware('signed')->name('files.download');
 
