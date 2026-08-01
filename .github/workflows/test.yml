@@ -1,85 +1,801 @@
-name: Run Laravel Tests
+name: Laravel Tests & Coverage
 
 on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
 
+  # اجرای خودکار هر یک ساعت
+  # schedule:
+  #   - cron: "0 * * * *"
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+env:
+  REQUIRED_COVERAGE: 100
+
 jobs:
+
+  # ==========================================================
+  # Laravel Tests & Coverage
+  # ==========================================================
+
   laravel-tests:
+
+    name: 🧪 Laravel Tests & Coverage
+
     runs-on: ubuntu-latest
+
     services:
+
       mysql:
         image: mysql:5.7
+
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: sso
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
+
         ports:
           - 3306:3306
-        volumes:
-          - /tmp/mysql:/var/lib/mysql
-    steps:
-      - uses: actions/checkout@v3
 
-      - name: Set up PHP
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+
+      # ========================================================
+      # Checkout
+      # ========================================================
+
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+
+      # ========================================================
+      # Setup PHP
+      # ========================================================
+
+      - name: 🐘 Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'  # ارتقاء به نسخه PHP 8.2
-          extensions: mbstring, xml, ctype, json, bcmath, tokenizer
+          php-version: "8.4"
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+          extensions: >
+            mbstring,
+            xml,
+            ctype,
+            json,
+            bcmath,
+            tokenizer,
+            pdo,
+            pdo_mysql
 
-      - name: Copy .env.example to .env
-        run: cp .env.example .env
+          coverage: pcov
 
-      - name: Update .env with database config
+          tools: composer:v2
+
+
+      # ========================================================
+      # Check PHP / Composer
+      # ========================================================
+
+      - name: 🔍 Check PHP & Composer Versions
         run: |
-          sed -i 's/DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/' .env
-          sed -i 's/DB_DATABASE=homestead/DB_DATABASE=sso/' .env
-          sed -i 's/DB_USERNAME=homestead/DB_USERNAME=root/' .env
-          sed -i 's/DB_PASSWORD=secret/DB_PASSWORD=root/' .env
+          php -v
+          composer --version
 
-      - name: Wait for MySQL to be ready
-        run: sleep 15
 
-      - name: Run migrations
-        run: php artisan migrate --force
+      # ========================================================
+      # Install Composer Dependencies
+      # ========================================================
 
-      - name: Run npm install
-        run: npm install
+      - name: 📦 Install Composer Dependencies
+        run: |
+          composer install \
+            --prefer-dist \
+            --no-progress \
+            --no-interaction \
+            --optimize-autoloader
 
-      - name: Run npm run build
-        run: npm run build
 
-      - name: Run tests
-        run: php artisan test
-        continue-on-error: true
+      # ========================================================
+      # Prepare Laravel Environment
+      # ========================================================
+
+      - name: ⚙️ Prepare Laravel Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+
+      # ========================================================
+      # Configure Test Database
+      # ========================================================
+
+      - name: 🗄️ Configure Test Database
+        run: |
+          sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=sso/' .env
+          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+
+
+      # ========================================================
+      # Run Database Migrations
+      # ========================================================
+
+      - name: 🗄️ Run Database Migrations
+        run: |
+          php artisan migrate --force
+
+
+      # ========================================================
+      # Setup Node.js
+      # ========================================================
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+
+      # ========================================================
+      # Install NPM Dependencies
+      # ========================================================
+
+      - name: 📦 Install NPM Dependencies
+        run: |
+          npm ci
+
+
+      # ========================================================
+      # Build Frontend
+      # ========================================================
+
+      - name: 🏗️ Build Frontend
+        run: |
+          npm run build
+
+
+      # ========================================================
+      # Run Laravel Tests
+      #
+      # IMPORTANT:
+      # Tests are executed ONLY ONCE.
+      # JUnit result is saved to test-results.xml.
+      # Coverage is saved to coverage.xml.
+      # ========================================================
+
+      - name: 🧪 Run Laravel Tests & Generate Coverage
+        id: tests
+        run: |
+          vendor/bin/phpunit \
+            --log-junit=test-results.xml \
+            --coverage-clover=coverage.xml
+
+
+      # ========================================================
+      # Publish Test Results
+      # ========================================================
+
+      - name: 📊 Publish Test Results
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: 🧪 Laravel Test Results
+          path: test-results.xml
+          reporter: java-junit
+          fail-on-error: false
+
+
+      # ========================================================
+      # Generate GitHub Test & Coverage Summary
+      # ========================================================
+
+      - name: 📝 Generate GitHub Summary
+        if: always()
+        shell: bash
+        run: |
+
+          python3 <<'PY'
+
+          import os
+          import xml.etree.ElementTree as ET
+
+          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
+
+          # ==================================================
+          # Read JUnit XML
+          # ==================================================
+
+          total = 0
+          failures = 0
+          errors = 0
+          skipped = 0
+
+          test_cases = []
+
+          if os.path.exists("test-results.xml"):
+
+              tree = ET.parse("test-results.xml")
+              root = tree.getroot()
+
+              # PHPUnit can generate either:
+              # <testsuites>
+              # or
+              # <testsuite>
+
+              suites = []
+
+              if root.tag == "testsuites":
+                  suites = root.findall(".//testsuite")
+
+              elif root.tag == "testsuite":
+                  suites = [root]
+
+              for suite in suites:
+
+                  for testcase in suite.findall("testcase"):
+
+                      total += 1
+
+                      classname = testcase.attrib.get(
+                          "classname",
+                          "Unknown"
+                      )
+
+                      name = testcase.attrib.get(
+                          "name",
+                          "Unknown"
+                      )
+
+                      duration = testcase.attrib.get(
+                          "time",
+                          "0"
+                      )
+
+                      status = "passed"
+                      message = ""
+
+                      failure = testcase.find("failure")
+                      error = testcase.find("error")
+                      skipped_node = testcase.find("skipped")
+
+                      if failure is not None:
+
+                          failures += 1
+                          status = "failed"
+
+                          message = (
+                              failure.text or
+                              failure.attrib.get("message", "")
+                          )
+
+                      elif error is not None:
+
+                          errors += 1
+                          status = "error"
+
+                          message = (
+                              error.text or
+                              error.attrib.get("message", "")
+                          )
+
+                      elif skipped_node is not None:
+
+                          skipped += 1
+                          status = "skipped"
+
+                      test_cases.append({
+                          "classname": classname,
+                          "name": name,
+                          "duration": duration,
+                          "status": status,
+                          "message": message
+                      })
+
+
+          failed = failures + errors
+          passed = total - failed - skipped
+
+
+          # ==================================================
+          # Read Coverage XML
+          # ==================================================
+
+          coverage_percent = None
+
+          if os.path.exists("coverage.xml"):
+
+              coverage_tree = ET.parse("coverage.xml")
+              coverage_root = coverage_tree.getroot()
+
+              metrics = coverage_root.find("project/metrics")
+
+              if metrics is None:
+                  metrics = coverage_root.find(".//metrics")
+
+              if metrics is not None:
+
+                  statements = int(
+                      metrics.attrib.get(
+                          "statements",
+                          "0"
+                      )
+                  )
+
+                  coveredstatements = int(
+                      metrics.attrib.get(
+                          "coveredstatements",
+                          "0"
+                      )
+                  )
+
+                  if statements > 0:
+
+                      coverage_percent = (
+                          coveredstatements /
+                          statements
+                      ) * 100
+
+
+          # ==================================================
+          # Determine Status
+          # ==================================================
+
+          required_coverage = float(
+              os.environ.get(
+                  "REQUIRED_COVERAGE",
+                  "100"
+              )
+          )
+
+          tests_passed = failed == 0
+
+          coverage_passed = (
+              coverage_percent is not None
+              and coverage_percent >= required_coverage
+          )
+
+          workflow_passed = (
+              tests_passed
+              and coverage_passed
+          )
+
+
+          # ==================================================
+          # Write GitHub Summary
+          # ==================================================
+
+          with open(
+              summary_file,
+              "a",
+              encoding="utf-8"
+          ) as f:
+
+              f.write(
+                  "# 🧪 Laravel Test & Coverage Report\n\n"
+              )
+
+              f.write(
+                  "## 📊 Test Summary\n\n"
+              )
+
+              f.write(
+                  "| Metric | Result |\n"
+              )
+
+              f.write(
+                  "|---|---:|\n"
+              )
+
+              f.write(
+                  f"| 🧪 Total Tests | **{total}** |\n"
+              )
+
+              f.write(
+                  f"| ✅ Passed | **{passed}** |\n"
+              )
+
+              f.write(
+                  f"| ❌ Failed | **{failed}** |\n"
+              )
+
+              f.write(
+                  f"| ⏭️ Skipped | **{skipped}** |\n"
+              )
+
+              f.write(
+                  f"| 📈 Required Coverage | **{required_coverage:.0f}%** |\n"
+              )
+
+              if coverage_percent is not None:
+
+                  coverage_status = (
+                      "✅ PASS"
+                      if coverage_passed
+                      else "❌ FAIL"
+                  )
+
+                  f.write(
+                      f"| 📊 Total Coverage | "
+                      f"**{coverage_percent:.2f}%** "
+                      f"{coverage_status} |\n"
+                  )
+
+              else:
+
+                  f.write(
+                      "| 📊 Total Coverage | **N/A** ❌ |\n"
+                  )
+
+              workflow_status = (
+                  "✅ PASSED"
+                  if workflow_passed
+                  else "❌ FAILED"
+              )
+
+              f.write(
+                  f"| 🚦 Workflow Status | "
+                  f"**{workflow_status}** |\n"
+              )
+
+              f.write("\n---\n\n")
+
+
+              # ==================================================
+              # Test Details
+              # ==================================================
+
+              f.write(
+                  "## 🧪 Test Details\n\n"
+              )
+
+              if test_cases:
+
+                  f.write(
+                      "| Status | Test | Class | Duration |\n"
+                  )
+
+                  f.write(
+                      "|---|---|---|---:|\n"
+                  )
+
+                  for test in test_cases:
+
+                      if test["status"] == "passed":
+                          icon = "✅"
+
+                      elif test["status"] == "failed":
+                          icon = "❌"
+
+                      elif test["status"] == "error":
+                          icon = "💥"
+
+                      else:
+                          icon = "⏭️"
+
+                      f.write(
+                          f"| {icon} {test['status']} | "
+                          f"`{test['name']}` | "
+                          f"`{test['classname']}` | "
+                          f"{test['duration']}s |\n"
+                      )
+
+                  f.write("\n")
+
+
+              # ==================================================
+              # Failed Tests
+              # ==================================================
+
+              failed_tests = [
+                  test
+                  for test in test_cases
+                  if test["status"] in (
+                      "failed",
+                      "error"
+                  )
+              ]
+
+              if failed_tests:
+
+                  f.write(
+                      "## ❌ Failed Tests Details\n\n"
+                  )
+
+                  for test in failed_tests:
+
+                      f.write(
+                          f"### ❌ `{test['name']}`\n\n"
+                      )
+
+                      f.write(
+                          f"**Class:** "
+                          f"`{test['classname']}`\n\n"
+                      )
+
+                      if test["message"]:
+
+                          f.write(
+                              "```text\n"
+                          )
+
+                          f.write(
+                              test["message"][:5000]
+                          )
+
+                          f.write(
+                              "\n```\n\n"
+                          )
+
+
+              # ==================================================
+              # Coverage
+              # ==================================================
+
+              f.write(
+                  "## 📈 Coverage Report\n\n"
+              )
+
+              if coverage_percent is not None:
+
+                  f.write(
+                      "| Metric | Result |\n"
+                  )
+
+                  f.write(
+                      "|---|---:|\n"
+                  )
+
+                  f.write(
+                      f"| Required Coverage | "
+                      f"**{required_coverage:.0f}%** |\n"
+                  )
+
+                  f.write(
+                      f"| Actual Coverage | "
+                      f"**{coverage_percent:.2f}%** |\n"
+                  )
+
+                  f.write(
+                      f"| Coverage Status | "
+                      f"**{'✅ PASS' if coverage_passed else '❌ FAIL'}** |\n"
+                  )
+
+              else:
+
+                  f.write(
+                      "❌ Coverage report could not be generated.\n"
+                  )
+
+
+              # ==================================================
+              # Final Result
+              # ==================================================
+
+              f.write("\n---\n\n")
+
+              if workflow_passed:
+
+                  f.write(
+                      "## ✅ CI Result\n\n"
+                  )
+
+                  f.write(
+                      "All Laravel tests passed and coverage "
+                      "is at least 100%.\n"
+                  )
+
+              else:
+
+                  f.write(
+                      "## ❌ CI Result\n\n"
+                  )
+
+                  if not tests_passed:
+
+                      f.write(
+                          f"- ❌ {failed} test(s) failed.\n"
+                      )
+
+                  if not coverage_passed:
+
+                      if coverage_percent is None:
+
+                          f.write(
+                              "- ❌ Coverage report is missing.\n"
+                          )
+
+                      else:
+
+                          f.write(
+                              f"- ❌ Coverage is "
+                              f"{coverage_percent:.2f}%, "
+                              f"required is "
+                              f"{required_coverage:.0f}%.\n"
+                          )
+
+
+          # ==================================================
+          # Save values for later steps
+          # ==================================================
+
+          with open(
+              os.environ["GITHUB_ENV"],
+              "a"
+          ) as env:
+
+              env.write(
+                  f"TOTAL_TESTS={total}\n"
+              )
+
+              env.write(
+                  f"PASSED_TESTS={passed}\n"
+              )
+
+              env.write(
+                  f"FAILED_TESTS={failed}\n"
+              )
+
+              env.write(
+                  f"SKIPPED_TESTS={skipped}\n"
+              )
+
+              if coverage_percent is not None:
+
+                  env.write(
+                      f"COVERAGE_PERCENT={coverage_percent:.2f}\n"
+                  )
+
+              else:
+
+                  env.write(
+                      "COVERAGE_PERCENT=0\n"
+                  )
+
+          PY
+
+
+      # ========================================================
+      # Enforce 100% Coverage
+      #
+      # This step fails the workflow if:
+      # 1. Any test failed
+      # 2. Coverage is below 100%
+      # 3. Coverage report does not exist
+      # ========================================================
+
+      - name: 🚦 Enforce 100% Test & Coverage Requirement
+        if: always()
+        shell: bash
+        run: |
+
+          echo "========================================"
+          echo "Laravel CI Quality Gate"
+          echo "========================================"
+
+          echo "Total Tests: ${TOTAL_TESTS:-0}"
+          echo "Passed: ${PASSED_TESTS:-0}"
+          echo "Failed: ${FAILED_TESTS:-0}"
+          echo "Skipped: ${SKIPPED_TESTS:-0}"
+          echo "Coverage: ${COVERAGE_PERCENT:-0}%"
+          echo "Required: 100%"
+          echo "========================================"
+
+          TEST_FAILED=0
+          COVERAGE_FAILED=0
+
+          if [ "${FAILED_TESTS:-0}" -gt 0 ]; then
+            echo "❌ Tests failed."
+            TEST_FAILED=1
+          else
+            echo "✅ All tests passed."
+          fi
+
+          COVERAGE_VALUE="${COVERAGE_PERCENT:-0}"
+
+          if ! awk "BEGIN {exit !($COVERAGE_VALUE >= 100)}"; then
+            echo "❌ Coverage is below 100%."
+            COVERAGE_FAILED=1
+          else
+            echo "✅ Coverage is 100% or higher."
+          fi
+
+          if [ "$TEST_FAILED" -eq 1 ] || [ "$COVERAGE_FAILED" -eq 1 ]; then
+            echo ""
+            echo "❌ Quality Gate FAILED."
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Quality Gate PASSED."
+
+
+      # ========================================================
+      # Upload JUnit Test Results
+      # ========================================================
+
+      - name: 📄 Upload JUnit Test Results
+        if: always() && hashFiles('test-results.xml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: laravel-test-results
+          path: test-results.xml
+          if-no-files-found: warn
+
+
+      # ========================================================
+      # Upload Coverage XML
+      # ========================================================
+
+      - name: 📈 Upload Coverage XML
+        if: always() && hashFiles('coverage.xml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: laravel-coverage-report
+          path: coverage.xml
+          if-no-files-found: warn
+
+
+      # ========================================================
+      # Upload PHPUnit Artifacts
+      # ========================================================
+
+      - name: 📦 Upload Test & Coverage Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: laravel-ci-reports
+          path: |
+            test-results.xml
+            coverage.xml
+          if-no-files-found: warn
+
+
+  # ==========================================================
+  # Slack Notification
+  # ==========================================================
 
   notify_slack:
+
+    name: 🔔 Notify Slack
+
     runs-on: ubuntu-latest
-    if: failure()
+
+    needs:
+      - laravel-tests
+
+    if: ${{ always() && needs.laravel-tests.result == 'failure' }}
+
     steps:
-      - name: Send Slack Notification
-        uses: slackapi/slack-github-action@v1.18.0
+
+      - name: 🔔 Send Slack Notification
+        uses: slackapi/slack-github-action@v2.1.1
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+
           payload: |
             {
-              "text": "Laravel Tests have failed!",
+              "text": "❌ Laravel CI Failed",
               "attachments": [
                 {
                   "color": "danger",
-                  "text": "Please check the test results in GitHub Actions."
+                  "text": "Laravel tests failed or required 100% code coverage was not achieved. Please check the GitHub Actions run and Test & Coverage Summary."
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
