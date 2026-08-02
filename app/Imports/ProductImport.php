@@ -206,10 +206,9 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
              return;
         }
 
-        $product->file()->updateOrCreate(
-            ['product_id' => $product->id],
-            ['path' => $filePath]
-        );
+        $product->files()->create([
+            'path' => $filePath,
+        ]);
     }
 
     /**

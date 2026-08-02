@@ -1,0 +1,30 @@
+# Laravel dependencies
+vendor/
+composer.lock
+
+# Laravel environment files
+.env
+.env.*
+.env.*.local
+.env.local
+
+# Storage and cache
+storage/
+bootstrap/cache/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+
+# Misc
+*.zip
+*.tar
+*.tar.gz

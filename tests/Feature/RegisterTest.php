@@ -8,17 +8,30 @@ class RegisterTest extends TestCase
 {
     public function test_register_redirects_to_oauth_server()
     {
-        // .env
         config([
-            'app.oauth_client_id' => env('OAUTH_CLIENT_ID', '19'),
-            'app.oauth_server_url' => env('OAUTH_SERVER_URL', 'https://accounts.irpsc.com'),
+            'app.oauth_client_id' => 'test-client-id',
+            'app.oauth_server_url' => 'https://accounts.example.com',
         ]);
-
 
         $response = $this->get(route('register'));
 
-        $expectedUrl = 'https://accounts.irpsc.com/register?client_id=19&redirect_uri=' . urlencode(route('login'));
+        $expectedUrl = 'https://accounts.example.com/register?client_id=test-client-id&redirect_uri='
+            .urlencode(route('login'));
 
         $response->assertRedirect($expectedUrl);
+    }
+
+    public function test_register_stores_trusted_intended_url(): void
+    {
+        config([
+            'app.oauth_client_id' => 'test-client-id',
+            'app.oauth_server_url' => 'https://accounts.example.com',
+            'app.frontend_url' => 'http://localhost:3000',
+        ]);
+
+        $this->get(route('register', ['intended' => 'http://localhost:3000/profile']))
+            ->assertRedirect();
+
+        $this->assertSame('http://localhost:3000/profile', session('url.intended'));
     }
 }

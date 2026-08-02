@@ -26,13 +26,36 @@ class Category extends Model implements Sitemapable
     /**
      * Get the URL attribute for the category.
      *
+     * Walks the parent chain iteratively and breaks on cycles/self-parents
+     * so recursive accessors cannot exhaust memory.
+     *
      * @return string
      */
     public function getUrlAttribute()
     {
-        $this->loadMissing('parent');
+        $segments = [];
+        $category = $this;
+        $visited = [];
 
-        return $this->parent ? $this->parent->url . '/' . $this->slug : $this->slug;
+        while ($category) {
+            if (isset($visited[$category->id])) {
+                break;
+            }
+
+            $visited[$category->id] = true;
+            array_unshift($segments, $category->slug);
+
+            $category->loadMissing('parent');
+            $parent = $category->relationLoaded('parent') ? $category->parent : null;
+
+            if (! $parent || $parent->id === $category->id) {
+                break;
+            }
+
+            $category = $parent;
+        }
+
+        return implode('/', $segments);
     }
 
     /**
@@ -40,18 +63,35 @@ class Category extends Model implements Sitemapable
      *
      * @return string
      */
-    /**
-     * Get the breadcrumb attribute for the category.
-     *
-     * @return string
-     */
     public function getBreadcrumbAttribute()
     {
-        $this->loadMissing('parent');
+        $parts = [];
+        $category = $this;
+        $visited = [];
 
-        $url = '<a href="' . url('categories/' . $this->url) . '">' . e($this->name) . '</a>';
+        while ($category) {
+            if (isset($visited[$category->id])) {
+                break;
+            }
 
-        return $this->parent ? $this->parent->breadcrumb . ' / ' . $url : $url;
+            $visited[$category->id] = true;
+
+            array_unshift(
+                $parts,
+                '<a href="' . url('categories/' . $category->url) . '">' . e($category->name) . '</a>'
+            );
+
+            $category->loadMissing('parent');
+            $parent = $category->relationLoaded('parent') ? $category->parent : null;
+
+            if (! $parent || $parent->id === $category->id) {
+                break;
+            }
+
+            $category = $parent;
+        }
+
+        return implode(' / ', $parts);
     }
 
     /**

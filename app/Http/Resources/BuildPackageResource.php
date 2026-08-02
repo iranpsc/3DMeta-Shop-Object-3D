@@ -24,10 +24,12 @@ class BuildPackageResource extends JsonResource
                     'url' => $image->url,
                 ];
             }),
-            'file' => [
-                'id' => $this->file->id,
-                'url' => $this->file->url,
-            ],
+            'files' => $this->files->map(function ($file) {
+                return [
+                    'id' => $file->id,
+                    'url' => $file->url,
+                ];
+            }),
             'attributes' => $this->attributes->map(function ($attribute) {
                 return [
                     'slug' => $attribute->slug,

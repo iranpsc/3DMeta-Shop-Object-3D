@@ -2,9 +2,14 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Blade;
-use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,11 +26,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Blade::directive('hasRole', fn ($role) => "<?php if(auth()->check() && auth()->user()->hasRole({$role})): ?>");
-        Blade::directive('endHasRole', fn () => '<?php endif; ?>');
-        
-        Livewire::addPersistentMiddleware([
-            \App\Http\Middleware\Admin::class,
-        ]);
+        Event::listen(Registered::class, SendEmailVerificationNotification::class);
+
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        $appUrl = (string) config('app.url');
+        if (str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+            URL::forceRootUrl($appUrl);
+        }
     }
 }

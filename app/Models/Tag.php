@@ -30,7 +30,7 @@ class Tag extends Model implements Sitemapable
 
     public function getUrlAttribute()
     {
-        return url('/tags/' . $this->slug);
+        return url('/tags/' . trim($this->slug));
     }
 
     public function toSitemapTag(): Url|string|array

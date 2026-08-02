@@ -27,8 +27,10 @@ class TagPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Tag $tag): bool
+    public function delete(User $user, Tag $tag): Response
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') && $tag->products->isEmpty()
+            ? Response::allow()
+            : Response::deny('شما اجازه حذف این برچسب را ندارید.');
     }
 }

@@ -86,7 +86,9 @@ class Product extends Model implements Sitemapable
 
     public function getUrlAttribute()
     {
-        return route('products.show', $this->sku);
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+
+        return "{$frontendUrl}/products/{$this->sku}";
     }
 
     public function toSitemapTag(): Url|string|array
@@ -151,13 +153,13 @@ class Product extends Model implements Sitemapable
     }
 
     /**
-     * Get the file for the product.
+     * Get the files for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function file()
+    public function files()
     {
-        return $this->hasOne(File::class);
+        return $this->hasMany(File::class);
     }
 
     /**

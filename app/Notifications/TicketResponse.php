@@ -44,7 +44,7 @@ class TicketResponse extends Notification
             'time' => now()->diffForHumans(),
             'sender' => 'پشتیبانی',
             'message' => 'پاسخ جدیدی برای تیکت شما ثبت شد.',
-            'url' => route('tickets.show', $this->ticket)
+            'url' => rtrim((string) config('app.frontend_url'), '/') . '/tickets/' . $this->ticket->getKey(),
         ];
     }
 }

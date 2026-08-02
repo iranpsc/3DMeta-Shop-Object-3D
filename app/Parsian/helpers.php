@@ -10,6 +10,6 @@ use App\Parsian\Parsian;
 if (!function_exists('parsian')) {
     function parsian(): Parsian
     {
-        return new Parsian();
+        return app(Parsian::class);
     }
 }

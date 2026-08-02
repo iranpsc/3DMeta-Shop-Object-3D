@@ -38,7 +38,7 @@ class ProductSeeder extends Seeder
                 ]);
             }
 
-            $product->file()->create([
+            $product->files()->create([
                 'name' => 'digital-chair.pdf',
                 'path' => 'products/digital-chair.pdf',
                 'type' => 'image/pdf',

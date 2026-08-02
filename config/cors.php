@@ -19,12 +19,18 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'https://3d.irpsc.com',
-        'https://world.metarang.com',
-        'https://dev-reactjs.metarang.com',
-        'https://dev-nextjs.metarang.com',
-    ],
+    'allowed_origins' => array_values(array_unique(array_filter(array_merge(
+        [
+            'https://3d.irpsc.com',
+            'https://world.metarang.com',
+            'https://dev-reactjs.metarang.com',
+            'https://dev-nextjs.metarang.com',
+            'https://3d.irpsc.com',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+        ],
+        array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')))
+    )))),
 
     'allowed_origins_patterns' => [],
 
@@ -34,6 +40,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

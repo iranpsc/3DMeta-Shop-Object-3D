@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Category;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,8 +20,18 @@ class CategoryFactory extends Factory
         return [
             'name' => $this->faker->word(),
             'slug' => $this->faker->slug,
-            'parent_id' => random_int(1, 10),
+            'parent_id' => null,
             'description' => $this->faker->paragraph(),
         ];
+    }
+
+    /**
+     * Indicate that the category has a parent.
+     */
+    public function withParent(?Category $parent = null): static
+    {
+        return $this->state(fn () => [
+            'parent_id' => $parent?->id ?? Category::factory(),
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
+use App\Support\IntendedUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
@@ -20,13 +21,19 @@ class LoginController extends Controller
      */
     public function redirect(Request $request)
     {
-        $request->session()->put('url.intended', redirect()->getIntendedUrl() ?? url()->previous());
+        $intended = IntendedUrl::fromRequest($request)
+            ?? IntendedUrl::resolve(redirect()->getIntendedUrl())
+            ?? IntendedUrl::resolve(url()->previous());
+
+        if ($intended) {
+            $request->session()->put('url.intended', $intended);
+        }
 
         $request->session()->put('state', $state = Str::random(40));
 
         $query = http_build_query([
             'client_id' => config('app.oauth_client_id'),
-            'redirect_uri' => route('auth.callback'),
+            'redirect_uri' => config('app.url') . '/auth/callback',
             'response_type' => 'code',
             'scope' => '',
             'state' => $state,
@@ -58,7 +65,7 @@ class LoginController extends Controller
             'grant_type' => 'authorization_code',
             'client_id' => config('app.oauth_client_id'),
             'client_secret' => config('app.oauth_client_secret'),
-            'redirect_uri' => route('auth.callback'),
+            'redirect_uri' => config('app.url') . '/auth/callback',
             'code' => $request->code,
         ]);
 
@@ -87,8 +94,13 @@ class LoginController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
         $intendedUrl = $request->session()->pull('url.intended');
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
 
-        return redirect()->to($intendedUrl ?: route('home'));
+        if ($intendedUrl && str_starts_with($intendedUrl, $frontendUrl)) {
+            return redirect()->to($intendedUrl);
+        }
+
+        return redirect()->away($frontendUrl ?: '/');
     }
 
     /**
@@ -103,6 +115,8 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return to_route('home');
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+
+        return redirect()->away($frontendUrl ?: '/');
     }
 }

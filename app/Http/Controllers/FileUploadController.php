@@ -25,7 +25,7 @@ class FileUploadController extends Controller
     public function upload(Request $request)
     {
         // create the file receiver
-        $receiver = new FileReceiver("file", $request, HandlerFactory::classFromRequest($request));
+        $receiver = $this->makeReceiver($request);
 
         // check if the upload is success, throw exception or return response you need
         if ($receiver->isUploaded() === false) {
@@ -52,6 +52,14 @@ class FileUploadController extends Controller
     }
 
     /**
+     * @return \Pion\Laravel\ChunkUpload\Receiver\FileReceiver
+     */
+    protected function makeReceiver(Request $request)
+    {
+        return new FileReceiver("file", $request, HandlerFactory::classFromRequest($request));
+    }
+
+    /**
      * Saves the file
      *
      * @param UploadedFile $file
@@ -60,10 +68,11 @@ class FileUploadController extends Controller
      */
     protected function saveFile(UploadedFile $file)
     {
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'zip', 'rar', 'pdf', 'doc', 'docx', 'fbx', 'obj', 'blend', 'stl', 'gltf', 'glb'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'fbx', 'gltf', 'glb', 'bin'];
+        $maxSizeKb = 100 * 1024; // 100MB
 
         $validator = Validator::make(['file' => $file], [
-            'file' => ['required', 'file', new SecureFile($allowedExtensions)],
+            'file' => ['required', 'file', new SecureFile($allowedExtensions, $maxSizeKb)],
         ]);
 
         if ($validator->fails()) {
