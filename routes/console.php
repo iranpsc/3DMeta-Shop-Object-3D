@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -11,3 +12,7 @@ Artisan::command('sitemap:generate', function () {
     dispatch(new \App\Jobs\SitemapGenerator());
     $this->info('Sitemap generation job dispatched.');
 })->purpose('Dispatch the SitemapGenerator job to generate the sitemap.');
+
+Schedule::command('sitemap:generate')
+    ->everyThreeHours()
+    ->withoutOverlapping();

@@ -1,0 +1,108 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PHP_VERSION: "8.4"
+        COMPOSER_VERSION: "2"
+        ARVAN_REGISTRY: docker.arvancloud.ir
+    image: 3drgb-backend-api:local
+    container_name: 3drgb-api
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_NAME: "3D RGB"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      APP_KEY: "${APP_KEY:-}"
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: info
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-3drgb}"
+      DB_USERNAME: "${DB_USERNAME:-3drgb}"
+      DB_PASSWORD: "${DB_PASSWORD:-secret}"
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: predis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      BROADCAST_DRIVER: log
+      FILESYSTEM_DISK: local
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+      CACHE_CONFIG: "true"
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:3000}"
+      SESSION_DOMAIN: "${SESSION_DOMAIN:-localhost}"
+      SANCTUM_STATEFUL_DOMAINS: "${SANCTUM_STATEFUL_DOMAINS:-localhost,localhost:3000,127.0.0.1,127.0.0.1:3000}"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Durable uploads (local disk root = storage/app). Do not mount all of storage/.
+      - ${DATA_STORAGE_PATH:-/opt/3dmeta/storage/app}:/var/www/html/storage/app
+      # Generated sitemaps served by Nginx from public/sitemap
+      - ${DATA_SITEMAP_PATH:-/opt/3dmeta/sitemap}:/var/www/html/public/sitemap
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - 3drgb
+
+  mysql:
+    image: docker.arvancloud.ir/mysql:8.0
+    container_name: 3drgb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE:-3drgb}"
+      MYSQL_USER: "${DB_USERNAME:-3drgb}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-secret}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - 3drgb
+
+  redis:
+    image: docker.arvancloud.ir/redis:7.4-alpine
+    container_name: 3drgb-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - 3drgb
+
+networks:
+  3drgb:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
