@@ -1,0 +1,67 @@
+# Git / IDE
+.git
+.github
+.cursor
+.idea
+.vscode
+.fleet
+*.md
+!README.md
+.editorconfig
+.gitattributes
+.gitignore
+.cursorignore
+
+# Dependencies (installed in image)
+/vendor
+/node_modules
+
+# Frontend tooling (API-only image; no npm build)
+package.json
+package-lock.json
+vite.config.js
+postcss.config.js
+tailwind.config.js
+/resources/css
+/resources/js
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+!.env.docker.example
+auth.json
+
+# Tests / coverage / CI artifacts
+/tests
+/coverage.xml
+/phpunit.xml
+/.phpunit.cache
+/.phpunit.result.cache
+test-results.xml
+
+# Build artifacts
+/public/build
+/public/hot
+/public/storage
+/public/sitemap
+
+# Runtime / logs
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/storage/debugbar/*
+!/storage/**/.gitignore
+
+# Misc
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+.DS_Store
+Dockerfile*
+docker-compose*.yml
+compose*.yml
+.dockerignore
