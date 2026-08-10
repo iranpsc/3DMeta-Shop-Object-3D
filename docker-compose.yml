@@ -69,8 +69,10 @@ services:
       MYSQL_USER: "${DB_USERNAME:-3drgb}"
       MYSQL_PASSWORD: "${DB_PASSWORD:-secret}"
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootsecret}"
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
+    # Internal only — do not publish to host (avoids conflicts with other projects).
+    # App reaches MySQL via Docker DNS: mysql:3306 on the 3drgb network.
+    expose:
+      - "3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -87,8 +89,10 @@ services:
     container_name: 3drgb-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # Internal only — do not publish to host (avoids conflicts with other projects).
+    # App reaches Redis via Docker DNS: redis:6379 on the 3drgb network.
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:

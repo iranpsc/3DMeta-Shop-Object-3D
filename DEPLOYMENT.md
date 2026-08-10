@@ -103,10 +103,6 @@ DB_USERNAME=3drgb
 DB_PASSWORD=CHANGE_ME_STRONG_PASSWORD
 DB_ROOT_PASSWORD=CHANGE_ME_ROOT_PASSWORD
 
-# Optional host port mappings (prefer leaving DB/Redis closed in production)
-MYSQL_PORT=3306
-REDIS_PORT=6379
-
 # Boot behaviour
 RUN_MIGRATIONS=true
 
@@ -282,7 +278,7 @@ After changing env vars that affect cached config, redeploy (or clear caches) so
 
 ## 9. Production recommendations
 
-1. **Do not publish MySQL/Redis ports** to the public internet. Prefer removing `ports:` from `mysql` and `redis` in compose for production, or firewall them on the host. Keep only the API reachable via Dokploy domain routing.
+1. **Do not publish MySQL/Redis ports** to the host. Compose uses `expose:` (internal network only) so `app` reaches them via `mysql:3306` / `redis:6379` with no host port conflicts. Keep only the API reachable via Dokploy domain routing.
 2. Set `APP_DEBUG=false` and a stable `APP_KEY`.
 3. Align `FRONTEND_URL`, `SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS`, and `CORS_ALLOWED_ORIGINS` with your real SPA domains.
 4. Enable HTTPS on the Dokploy domain.
