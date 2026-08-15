@@ -211,9 +211,25 @@ class AdminProductService
 
         $fullPath = storage_path('app/'.$path.$name);
 
-        if (is_file($fullPath) && str_starts_with((string) realpath($fullPath), storage_path('app/upload'))) {
+        if (is_file($fullPath) && $this->isInsideUploadDirectory($fullPath)) {
             unlink($fullPath);
         }
+    }
+
+    private function isInsideUploadDirectory(string $absolutePath): bool
+    {
+        $realPath = realpath($absolutePath);
+        $uploadRoot = realpath(storage_path('app/upload'));
+
+        if ($realPath === false || $uploadRoot === false) {
+            return false;
+        }
+
+        $normalizedPath = strtolower(str_replace('\\', '/', $realPath));
+        $normalizedRoot = strtolower(str_replace('\\', '/', $uploadRoot));
+
+        return $normalizedPath === $normalizedRoot
+            || str_starts_with($normalizedPath, $normalizedRoot.'/');
     }
 
     /**
@@ -228,7 +244,7 @@ class AdminProductService
 
         $originalPath = storage_path('app/'.$uploadedFile['path'].$uploadedFile['name']);
 
-        if (! file_exists($originalPath) || ! str_starts_with(realpath($originalPath), storage_path('app/upload'))) {
+        if (! file_exists($originalPath) || ! $this->isInsideUploadDirectory($originalPath)) {
             abort(422, "File not found or invalid path at index {$index}.");
         }
 

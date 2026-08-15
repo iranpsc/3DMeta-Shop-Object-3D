@@ -16,6 +16,7 @@
         "pishran/zarinpal": "^4.3",
         "predis/predis": "^2.2",
         "sadegh19b/laravel-persian-validation": "^2.0",
+        "sentry/sentry-laravel": "^4.27",
         "spatie/laravel-permission": "^6.25",
         "spatie/laravel-sitemap": "^8.0",
         "staudenmeir/eloquent-has-many-deep": "^1.22",
