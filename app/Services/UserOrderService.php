@@ -32,7 +32,7 @@ class UserOrderService
 
         return [
             'order' => $order,
-            'products' => $order->products->map(function ($product) use ($user) {
+            'products' => $order->products->map(function ($product) {
                 $pivot = $product->users->first()?->pivot;
 
                 return [

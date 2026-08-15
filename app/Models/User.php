@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -68,7 +71,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<string, string>
      */
     protected $attributes = [
-        'role' => 'user'
+        'role' => 'user',
     ];
 
     /**
@@ -84,7 +87,6 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Determine if the user has the given role
      *
-     * @param string $role
      * @return bool
      */
     public function hasRole(string $role)
@@ -95,7 +97,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get the orders for the user.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function orders()
     {
@@ -105,7 +107,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get the transactions for the user.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     * @return HasManyThrough
      */
     public function transactions()
     {
@@ -115,7 +117,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get the products for the user.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function products()
     {
@@ -125,7 +127,6 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Check if user has purchased the given product.
      *
-     * @param \App\Models\Product $product
      * @return bool
      */
     public function hasPurchased(Product $product)
@@ -136,7 +137,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get user's tickets
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function tickets()
     {
@@ -146,7 +147,6 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Check if user has already added review for the given product.
      *
-     * @param \App\Models\Product $product
      * @return bool
      */
     public function hasReviewed(Product $product)

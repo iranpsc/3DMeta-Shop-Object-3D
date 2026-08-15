@@ -27,8 +27,7 @@ class Parsian
     /**
      * Sets the order ID for the payment.
      *
-     * @param string $orderId The order ID.
-     * @return self
+     * @param  string  $orderId  The order ID.
      */
     public function orderId(string $orderId): self
     {
@@ -40,8 +39,7 @@ class Parsian
     /**
      * Sets the amount of the payment.
      *
-     * @param int $amount The amount.
-     * @return self
+     * @param  int  $amount  The amount.
      */
     public function amount(int $amount): self
     {
@@ -52,9 +50,6 @@ class Parsian
 
     /**
      * Sets the merchant id.
-     *
-     * @param string $merchantId.
-     * @return self
      */
     public function merchantId(string $merchantId): self
     {
@@ -66,8 +61,7 @@ class Parsian
     /**
      * Sets the token.
      *
-     * @param int $token The token.
-     * @return self
+     * @param  int  $token  The token.
      */
     public function token(int $token): self
     {
@@ -84,6 +78,7 @@ class Parsian
     public function request(): Request
     {
         $merchantId = $this->merchantId ?? config('payment-gateway.merchant_id');
+
         return new Request($merchantId, $this->orderId, $this->amount);
     }
 
@@ -95,6 +90,7 @@ class Parsian
     public function verification(): Verification
     {
         $merchantId = $this->merchantId ?? config('payment-gateway.merchant_id');
+
         return new Verification($merchantId, $this->token);
     }
 }

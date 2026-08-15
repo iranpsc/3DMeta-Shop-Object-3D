@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\ContactUsMessage;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Tag;
 use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\User;
@@ -30,7 +31,7 @@ class FinalCoverageGapsTest extends TestCase
     {
         Storage::fake('public');
         $category = Category::factory()->create();
-        $tag = \App\Models\Tag::factory()->create();
+        $tag = Tag::factory()->create();
         $attribute = Attribute::factory()->create();
         $product = Product::factory()->create([
             'category_id' => $category->id,
@@ -121,7 +122,7 @@ class FinalCoverageGapsTest extends TestCase
     {
         Category::factory()->create();
         Attribute::factory()->create(['name' => 'Color', 'slug' => 'color']);
-        $import = new ProductImport();
+        $import = new ProductImport;
 
         $data = [
             ['sku', 'name', 'published', 'short_description', 'long_description', 'stock_status', 'quantity', 'delivery_time', 'customer_can_add_review', 'sale_price', 'price', 'categories', 'tags', 'images', 'file', 'attr', 'val', 'display'],
@@ -199,9 +200,7 @@ class FinalCoverageGapsTest extends TestCase
         $rule = new SecureFile(['txt']);
         $file = new class extends UploadedFile
         {
-            public function __construct()
-            {
-            }
+            public function __construct() {}
 
             public function getError(): int
             {

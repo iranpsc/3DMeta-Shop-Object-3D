@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use App\Support\IntendedUrl;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\IntendedUrl;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -54,8 +55,8 @@ class CheckoutService
         }
 
         $redirectUrl = $action === 'register'
-            ? route('register', $params)
-            : route('login', $params);
+            ? route('auth.register', $params)
+            : route('auth.redirect', $params);
 
         return [
             'action' => $action,
@@ -239,7 +240,7 @@ class CheckoutService
 
     /**
      * @param  array<int, array{product_id: int, quantity: int}>  $items
-     * @param  \Illuminate\Support\Collection<int, Product>  $products
+     * @param  Collection<int, Product>  $products
      * @return array<int, array{order_id: string, product_id: int, quantity: int}>
      */
     private function prepareOrderItems(string $orderId, array $items, $products): array

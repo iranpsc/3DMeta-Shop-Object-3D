@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\URL;
 
 class File extends Model
@@ -21,7 +22,7 @@ class File extends Model
     protected static function booted(): void
     {
         static::deleting(function (File $file) {
-            $fullPath = storage_path('app/' . $file->path);
+            $fullPath = storage_path('app/'.$file->path);
 
             if (is_file($fullPath)) {
                 unlink($fullPath);
@@ -32,7 +33,7 @@ class File extends Model
     /**
      * Get the product that owns the File
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function product()
     {

@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class AdminProductResource extends ApiResource
 {
@@ -24,7 +24,7 @@ class AdminProductResource extends ApiResource
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, mixed>|array<int, mixed>  $items
+     * @param  Collection<int, mixed>|array<int, mixed>  $items
      */
     public static function paginated(LengthAwarePaginator $paginator): JsonResponse
     {

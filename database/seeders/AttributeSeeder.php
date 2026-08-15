@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Attribute;
 use Illuminate\Database\Seeder;
 
 class AttributeSeeder extends Seeder
@@ -12,6 +12,6 @@ class AttributeSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\Attribute::factory(5)->create();
+        Attribute::factory(5)->create();
     }
 }

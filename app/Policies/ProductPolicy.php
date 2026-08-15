@@ -37,10 +37,12 @@ class ProductPolicy
 
     public function addReview(User $user, Product $product): Response
     {
-        if ($product->is_free && $product->customer_can_add_review) return Response::allow();
+        if ($product->is_free && $product->customer_can_add_review) {
+            return Response::allow();
+        }
 
         return $user->hasPurchased($product)
-            && !$user->hasReviewed($product)
+            && ! $user->hasReviewed($product)
             && $product->customer_can_add_review
             ? Response::allow()
             : Response::deny('شما قادر به افزودن بازخورد برای این محصول نیستید.');

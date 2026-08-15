@@ -49,8 +49,6 @@ class ApiResource extends JsonResource
 
     /**
      * Build a successful JSON envelope without a resource instance.
-     *
-     * @param  mixed  $data
      */
     public static function success(mixed $data = null, ?string $message = null, int $status = 200): JsonResponse
     {

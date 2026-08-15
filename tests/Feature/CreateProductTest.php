@@ -39,5 +39,4 @@ class CreateProductTest extends TestCase
         $this->assertNotEmpty($product->quantity);
         $this->assertIsBool($product->published);
     }
-    
 }

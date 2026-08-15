@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -22,7 +23,7 @@ abstract class TestCase extends BaseTestCase
     /**
      * Act as a verified user with Sanctum stateful headers.
      */
-    protected function actingAsVerifiedApiUser(\App\Models\User $user): self
+    protected function actingAsVerifiedApiUser(User $user): self
     {
         return $this->actingAs($user)->withHeaders($this->statefulApiHeaders());
     }
@@ -30,9 +31,9 @@ abstract class TestCase extends BaseTestCase
     /**
      * Act as a verified admin with Sanctum stateful headers.
      */
-    protected function actingAsAdminApiUser(?\App\Models\User $user = null): self
+    protected function actingAsAdminApiUser(?User $user = null): self
     {
-        $user ??= \App\Models\User::factory()->admin()->create();
+        $user ??= User::factory()->admin()->create();
 
         return $this->actingAsVerifiedApiUser($user);
     }

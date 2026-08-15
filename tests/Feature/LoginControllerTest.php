@@ -21,7 +21,7 @@ class LoginControllerTest extends TestCase
             'app.oauth_server_url' => 'https://accounts.example.com',
         ]);
 
-        $response = $this->get(route('login'));
+        $response = $this->get(route('auth.redirect'));
 
         $expectedUrl = 'https://accounts.example.com/oauth/authorize?'.http_build_query([
             'client_id' => 'test-client-id',
@@ -44,7 +44,7 @@ class LoginControllerTest extends TestCase
 
         $intended = 'http://localhost:3000/profile';
 
-        $this->get(route('login', ['intended' => $intended]))
+        $this->get(route('auth.redirect', ['intended' => $intended]))
             ->assertRedirect();
 
         $this->assertEquals($intended, session('url.intended'));
@@ -58,7 +58,7 @@ class LoginControllerTest extends TestCase
             'app.frontend_url' => 'http://localhost:3000',
         ]);
 
-        $this->get(route('login', ['intended' => 'https://evil.example/phish']))
+        $this->get(route('auth.redirect', ['intended' => 'https://evil.example/phish']))
             ->assertRedirect();
 
         $this->assertNull(session('url.intended'));

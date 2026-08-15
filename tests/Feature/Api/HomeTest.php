@@ -3,7 +3,10 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -82,14 +85,14 @@ class HomeTest extends TestCase
         ]);
 
         $low->reviews()->create([
-            'user_id' => \App\Models\User::factory()->create()->id,
+            'user_id' => User::factory()->create()->id,
             'comment' => 'ok product review',
             'rating' => 2,
             'approved' => true,
         ]);
 
         $high->reviews()->create([
-            'user_id' => \App\Models\User::factory()->create()->id,
+            'user_id' => User::factory()->create()->id,
             'comment' => 'great product review',
             'rating' => 5,
             'approved' => true,
@@ -122,14 +125,14 @@ class HomeTest extends TestCase
             'name' => 'Has Sales',
         ]);
 
-        $user = \App\Models\User::factory()->create();
-        $order = \App\Models\Order::query()->create([
+        $user = User::factory()->create();
+        $order = Order::query()->create([
             'user_id' => $user->id,
             'amount' => 100000,
             'status' => 0,
         ]);
 
-        \App\Models\OrderItem::query()->create([
+        OrderItem::query()->create([
             'order_id' => $order->id,
             'product_id' => $withSales->id,
         ]);

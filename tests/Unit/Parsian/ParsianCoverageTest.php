@@ -4,7 +4,9 @@ namespace Tests\Unit\Parsian;
 
 use App\Parsian\Error;
 use App\Parsian\Parsian;
+use App\Parsian\Request;
 use App\Parsian\RequestResponse;
+use App\Parsian\Verification;
 use App\Parsian\VerificationResponse;
 use Tests\TestCase;
 
@@ -28,12 +30,12 @@ class ParsianCoverageTest extends TestCase
     {
         config(['payment-gateway.merchant_id' => 'merchant-1']);
 
-        $parsian = new Parsian();
+        $parsian = new Parsian;
         $request = $parsian->merchantId('m-2')->amount(1000)->orderId('ord-1')->request();
-        $this->assertInstanceOf(\App\Parsian\Request::class, $request);
+        $this->assertInstanceOf(Request::class, $request);
 
         $verification = $parsian->token(123)->verification();
-        $this->assertInstanceOf(\App\Parsian\Verification::class, $verification);
+        $this->assertInstanceOf(Verification::class, $verification);
         $this->assertSame(123, $parsian->token);
     }
 
@@ -95,7 +97,7 @@ class ParsianCoverageTest extends TestCase
 
     public function test_request_builder_setters(): void
     {
-        $request = new \App\Parsian\Request('merchant', 'order-1', 1000);
+        $request = new Request('merchant', 'order-1', 1000);
         $this->assertSame($request, $request->callbackurl('http://example.com/cb'));
         $this->assertSame($request, $request->additionalData('extra'));
         $this->assertSame($request, $request->originator('origin'));
@@ -113,9 +115,7 @@ class ParsianCoverageTest extends TestCase
 
         $client = new class($soapResult)
         {
-            public function __construct(private object $result)
-            {
-            }
+            public function __construct(private object $result) {}
 
             public function SalePaymentRequest(array $args): object
             {
@@ -123,7 +123,7 @@ class ParsianCoverageTest extends TestCase
             }
         };
 
-        $request = new \App\Parsian\Request('merchant', 'order-1', 1000);
+        $request = new Request('merchant', 'order-1', 1000);
         $request->callbackurl('http://example.com/cb');
         $response = $request->send($client);
         $this->assertTrue($response->success());
@@ -137,9 +137,7 @@ class ParsianCoverageTest extends TestCase
 
         $verifyClient = new class($confirm)
         {
-            public function __construct(private object $result)
-            {
-            }
+            public function __construct(private object $result) {}
 
             public function confirmPayment(array $args): object
             {
@@ -147,7 +145,7 @@ class ParsianCoverageTest extends TestCase
             }
         };
 
-        $verification = new \App\Parsian\Verification('merchant', 555);
+        $verification = new Verification('merchant', 555);
         $verifyResponse = $verification->send($verifyClient);
         $this->assertTrue($verifyResponse->success());
     }

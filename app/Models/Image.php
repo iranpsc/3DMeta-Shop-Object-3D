@@ -4,19 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Image extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'path'
+        'path',
     ];
 
     /**
      * Get the parent imageable model (product or category).
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     * @return MorphTo
      */
     public function imageable()
     {
@@ -30,6 +31,6 @@ class Image extends Model
      */
     public function getUrlAttribute()
     {
-        return url('storage/' . $this->path);
+        return url('storage/'.$this->path);
     }
 }

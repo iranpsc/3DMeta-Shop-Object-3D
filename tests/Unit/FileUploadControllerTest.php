@@ -6,6 +6,7 @@ use App\Http\Controllers\FileUploadController;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Pion\Laravel\ChunkUpload\Exceptions\UploadMissingFileException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class FileUploadControllerTest extends TestCase
@@ -14,9 +15,7 @@ class FileUploadControllerTest extends TestCase
     {
         return new class($receiver) extends FileUploadController
         {
-            public function __construct(private object $fakeReceiver)
-            {
-            }
+            public function __construct(private object $fakeReceiver) {}
 
             protected function makeReceiver(Request $request)
             {
@@ -88,9 +87,7 @@ class FileUploadControllerTest extends TestCase
 
         $save = new class($handler)
         {
-            public function __construct(private object $handler)
-            {
-            }
+            public function __construct(private object $handler) {}
 
             public function isFinished(): bool
             {
@@ -105,9 +102,7 @@ class FileUploadControllerTest extends TestCase
 
         $receiver = new class($save)
         {
-            public function __construct(private object $save)
-            {
-            }
+            public function __construct(private object $save) {}
 
             public function isUploaded(): bool
             {
@@ -131,9 +126,7 @@ class FileUploadControllerTest extends TestCase
 
         $save = new class($file)
         {
-            public function __construct(private UploadedFile $file)
-            {
-            }
+            public function __construct(private UploadedFile $file) {}
 
             public function isFinished(): bool
             {
@@ -148,9 +141,7 @@ class FileUploadControllerTest extends TestCase
 
         $receiver = new class($save)
         {
-            public function __construct(private object $save)
-            {
-            }
+            public function __construct(private object $save) {}
 
             public function isUploaded(): bool
             {
@@ -189,7 +180,7 @@ class FileUploadControllerTest extends TestCase
         $controller = $this->plainController();
         $file = UploadedFile::fake()->create('shell.php', 10, 'application/x-php');
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         $controller->exposeSaveFile($file);
     }

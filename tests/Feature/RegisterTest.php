@@ -13,10 +13,12 @@ class RegisterTest extends TestCase
             'app.oauth_server_url' => 'https://accounts.example.com',
         ]);
 
-        $response = $this->get(route('register'));
+        $response = $this->get(route('auth.register'));
 
-        $expectedUrl = 'https://accounts.example.com/register?client_id=test-client-id&redirect_uri='
-            .urlencode(route('login'));
+        $expectedUrl = 'https://accounts.example.com/register?'.http_build_query([
+            'client_id' => 'test-client-id',
+            'redirect_uri' => route('auth.redirect'),
+        ]);
 
         $response->assertRedirect($expectedUrl);
     }
@@ -29,7 +31,7 @@ class RegisterTest extends TestCase
             'app.frontend_url' => 'http://localhost:3000',
         ]);
 
-        $this->get(route('register', ['intended' => 'http://localhost:3000/profile']))
+        $this->get(route('auth.register', ['intended' => 'http://localhost:3000/profile']))
             ->assertRedirect();
 
         $this->assertSame('http://localhost:3000/profile', session('url.intended'));

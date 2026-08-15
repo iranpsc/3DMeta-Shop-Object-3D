@@ -14,6 +14,7 @@ use App\Parsian\Verification;
 use App\Services\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Mockery;
@@ -342,7 +343,7 @@ class CheckoutServiceTest extends TestCase
             'status' => 0,
         ]);
 
-        $quantity = (int) \Illuminate\Support\Facades\DB::table('product_user')
+        $quantity = (int) DB::table('product_user')
             ->where('user_id', $user->id)
             ->where('product_id', $product->id)
             ->value('quantity');
@@ -481,6 +482,6 @@ class CheckoutServiceTest extends TestCase
         );
 
         $this->assertSame('login', $result['action']);
-        $this->assertSame(route('login'), $result['redirect_url']);
+        $this->assertSame(route('auth.redirect'), $result['redirect_url']);
     }
 }

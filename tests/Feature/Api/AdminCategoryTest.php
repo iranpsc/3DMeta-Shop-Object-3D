@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -118,7 +119,7 @@ class AdminCategoryTest extends TestCase
     public function test_admin_cannot_delete_category_with_products(): void
     {
         $category = Category::factory()->create();
-        \App\Models\Product::factory()->create(['category_id' => $category->id]);
+        Product::factory()->create(['category_id' => $category->id]);
 
         $this->actingAsAdminApiUser()
             ->deleteJson("/api/v1/admin/categories/{$category->id}")

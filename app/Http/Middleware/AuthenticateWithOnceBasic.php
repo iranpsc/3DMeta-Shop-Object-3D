@@ -15,15 +15,15 @@ class AuthenticateWithOnceBasic
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
         $token = $request->bearerToken();
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->acceptJson()->get(config('app.oauth_server_url') . '/api/user');
+            'Authorization' => 'Bearer '.$token,
+        ])->acceptJson()->get(config('app.oauth_server_url').'/api/user');
 
         if ($response->status() !== 200) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -31,7 +31,7 @@ class AuthenticateWithOnceBasic
 
         $response = $response->json();
 
-        $user = Cache::remember('user:' . $response['email'], now()->addDay(), function () use ($response) {
+        $user = Cache::remember('user:'.$response['email'], now()->addDay(), function () use ($response) {
             return User::where('email', $response['email'])->first();
         });
 

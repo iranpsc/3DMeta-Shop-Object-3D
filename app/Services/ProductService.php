@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Tag;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -141,7 +142,7 @@ class ProductService
     /**
      * Products for a tag (parity with ProductTag).
      */
-    public function paginateForTag(\App\Models\Tag $tag): LengthAwarePaginator
+    public function paginateForTag(Tag $tag): LengthAwarePaginator
     {
         return $tag->products()
             ->published()

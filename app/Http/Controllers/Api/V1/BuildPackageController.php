@@ -24,7 +24,7 @@ class BuildPackageController extends Controller
                 $query->where('slug', 'karbari')
                     ->where('value', $request->karbari);
             })
-            ->whereHas('attributes', function ($query) use ($request) {
+            ->whereHas('attributes', function ($query) {
                 $query->where('slug', 'owner')
                     ->where('value', 'METARGB');
             })

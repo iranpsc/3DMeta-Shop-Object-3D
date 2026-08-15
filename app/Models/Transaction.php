@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transaction extends Model
 {
@@ -27,9 +29,10 @@ class Transaction extends Model
      *
      * @return array
      */
-    protected function casts() {
+    protected function casts()
+    {
         return [
-            'status' => 'int'
+            'status' => 'int',
         ];
     }
 
@@ -39,13 +42,13 @@ class Transaction extends Model
      * @return array
      */
     protected $attributes = [
-        'status' => -1
+        'status' => -1,
     ];
 
     /**
      * Get the order for the transaction.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function order()
     {
@@ -55,7 +58,7 @@ class Transaction extends Model
     /**
      * Scope a query to only include pending transactions.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  Builder  $query
      */
     public function scopePending($query)
     {

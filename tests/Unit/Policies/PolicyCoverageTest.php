@@ -24,7 +24,7 @@ class PolicyCoverageTest extends TestCase
         $admin = User::factory()->admin()->create();
         $user = User::factory()->create();
         $tag = Tag::factory()->create();
-        $policy = new TagPolicy();
+        $policy = new TagPolicy;
 
         $this->assertTrue($policy->create($admin));
         $this->assertFalse($policy->create($user));
@@ -41,7 +41,7 @@ class PolicyCoverageTest extends TestCase
         $admin = User::factory()->admin()->create();
         $user = User::factory()->create();
         $attribute = Attribute::factory()->create();
-        $policy = new AttributePolicy();
+        $policy = new AttributePolicy;
 
         $this->assertTrue($policy->create($admin));
         $this->assertFalse($policy->create($user));
@@ -54,7 +54,7 @@ class PolicyCoverageTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $user = User::factory()->create();
-        $policy = new ProductPolicy();
+        $policy = new ProductPolicy;
 
         $this->assertTrue($policy->approveReview($admin));
         $this->assertFalse($policy->approveReview($user));
@@ -75,7 +75,7 @@ class PolicyCoverageTest extends TestCase
             'priority' => 'low',
         ]);
 
-        $policy = new TicketPolicy();
+        $policy = new TicketPolicy;
         $this->assertTrue($policy->view($admin, $ticket));
         $this->assertTrue($policy->respond($admin, $ticket));
         $this->assertFalse($policy->update($admin, $ticket));

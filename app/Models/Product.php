@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Str;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
-use Illuminate\Support\Str;
 
 class Product extends Model implements Sitemapable
 {
@@ -33,7 +40,7 @@ class Product extends Model implements Sitemapable
         'published',
         'meta_description',
         'meta_keywords',
-        'created_by'
+        'created_by',
     ];
 
     protected $attributes = [
@@ -50,14 +57,14 @@ class Product extends Model implements Sitemapable
         'published' => false,
         'meta_description' => '',
         'meta_keywords' => '',
-        'created_by' => 'admin'
+        'created_by' => 'admin',
     ];
 
     protected $appends = [
         'url',
         'discount',
         'final_price',
-        'is_free'
+        'is_free',
     ];
 
     protected function casts(): array
@@ -104,8 +111,8 @@ class Product extends Model implements Sitemapable
     /**
      * Get products created by admin.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeCreatedByAdmin($query)
     {
@@ -115,7 +122,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the category that owns the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function category()
     {
@@ -125,7 +132,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the images for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function images()
     {
@@ -135,7 +142,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the latest image for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphOne
+     * @return MorphOne
      */
     public function latestImage()
     {
@@ -145,7 +152,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the oldest image for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphOne
+     * @return MorphOne
      */
     public function oldestImage()
     {
@@ -155,7 +162,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the files for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function files()
     {
@@ -165,7 +172,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the tags for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function tags()
     {
@@ -175,7 +182,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get the attributes for the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function attributes()
     {
@@ -185,7 +192,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get user's that own the product.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function users()
     {
@@ -195,8 +202,8 @@ class Product extends Model implements Sitemapable
     /**
      * Get published products.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopePublished($query)
     {
@@ -226,7 +233,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product sales
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     * @return HasManyThrough
      */
     public function sales()
     {
@@ -243,7 +250,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product reviews
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function reviews()
     {
@@ -253,7 +260,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product orders
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function orders()
     {
@@ -273,7 +280,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product likes
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function likes()
     {
@@ -283,7 +290,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product shares
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function shares()
     {
@@ -293,7 +300,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product downloads
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function downloads()
     {
@@ -303,7 +310,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product views
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function views()
     {
@@ -313,7 +320,7 @@ class Product extends Model implements Sitemapable
     /**
      * Get product bookmarks
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function bookmarks()
     {

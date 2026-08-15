@@ -2,13 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Category;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\Tag;
+use Illuminate\Database\Seeder;
 use Ybazli\Faker\Facades\Faker;
-use Database\Seeders\CategorySeeder;
 
 class ProductSeeder extends Seeder
 {
@@ -31,7 +28,7 @@ class ProductSeeder extends Seeder
             $product->attributes()->attach(4, ['value' => Faker::word()]);
             $product->attributes()->attach(5, ['value' => Faker::word()]);
 
-            for($i = 1; $i <= 3; $i++) {
+            for ($i = 1; $i <= 3; $i++) {
                 $product->images()->create([
                     'path' => '/products/digital-chair.png',
                     // 'is_main' => $i === 1 ? true : false

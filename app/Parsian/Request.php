@@ -2,8 +2,6 @@
 
 namespace App\Parsian;
 
-use App\Parsian\RequestResponse;
-
 class Request
 {
     /**
@@ -39,8 +37,8 @@ class Request
     /**
      * Constructs a new payment request object.
      *
-     * @param string $merchantId The merchant ID.
-     * @param int $amount The amount of the payment.
+     * @param  string  $merchantId  The merchant ID.
+     * @param  int  $amount  The amount of the payment.
      */
     public function __construct(string $merchantId, string $orderId, int $amount)
     {
@@ -56,20 +54,20 @@ class Request
      */
     public function send(?object $client = null)
     {
-        $url = "https://pec.shaparak.ir/NewIPGServices/Sale/SaleService.asmx?WSDL";
+        $url = 'https://pec.shaparak.ir/NewIPGServices/Sale/SaleService.asmx?WSDL';
 
-        $params = array (
-			"LoginAccount" => $this->merchantId,
-			"Amount" => $this->amount,
-			"OrderId" => $this->orderId,
-			"CallBackUrl" => $this->callbackUrl,
-            "AdditionalData" => $this->additionalData,
-            "Originator" => $this->originator
-	    );
+        $params = [
+            'LoginAccount' => $this->merchantId,
+            'Amount' => $this->amount,
+            'OrderId' => $this->orderId,
+            'CallBackUrl' => $this->callbackUrl,
+            'AdditionalData' => $this->additionalData,
+            'Originator' => $this->originator,
+        ];
 
         $client ??= new \SoapClient($url);
 
-        $result = $client->SalePaymentRequest(["requestData" => $params]);
+        $result = $client->SalePaymentRequest(['requestData' => $params]);
 
         return new RequestResponse($result);
     }
@@ -77,8 +75,7 @@ class Request
     /**
      * Sets the callback URL for the payment gateway to notify.
      *
-     * @param string $callbackUrl The callback URL.
-     * @return self
+     * @param  string  $callbackUrl  The callback URL.
      */
     public function callbackurl(string $callbackUrl): self
     {
@@ -90,8 +87,7 @@ class Request
     /**
      * Sets additional data for the payment request.
      *
-     * @param string $additionalData The additional data.
-     * @return self
+     * @param  string  $additionalData  The additional data.
      */
     public function additionalData(string $additionalData): self
     {
@@ -103,8 +99,7 @@ class Request
     /**
      * Sets the originator of the payment request.
      *
-     * @param string $originator The originator.
-     * @return self
+     * @param  string  $originator  The originator.
      */
     public function originator(string $originator): self
     {

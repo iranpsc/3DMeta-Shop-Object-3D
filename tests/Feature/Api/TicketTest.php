@@ -4,7 +4,10 @@ namespace Tests\Feature\Api;
 
 use App\Models\Ticket;
 use App\Models\User;
+use App\Notifications\TicketResponse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class TicketTest extends TestCase
@@ -85,7 +88,7 @@ class TicketTest extends TestCase
 
     public function test_user_can_respond_to_ticket(): void
     {
-        \Illuminate\Support\Facades\Notification::fake();
+        Notification::fake();
 
         $user = User::factory()->create();
         $ticket = Ticket::create([
@@ -106,9 +109,9 @@ class TicketTest extends TestCase
             'message' => 'Thanks for the update',
         ]);
 
-        \Illuminate\Support\Facades\Notification::assertSentTo(
+        Notification::assertSentTo(
             $user,
-            \App\Notifications\TicketResponse::class
+            TicketResponse::class
         );
     }
 
@@ -138,7 +141,7 @@ class TicketTest extends TestCase
                 'title' => 'With attachment',
                 'message' => 'Ticket body text',
                 'priority' => 'high',
-                'attachment' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
+                'attachment' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
@@ -162,7 +165,7 @@ class TicketTest extends TestCase
                 'title' => 'New title',
                 'message' => 'New message',
                 'priority' => 'medium',
-                'attachment' => \Illuminate\Http\UploadedFile::fake()->image('shot.jpg'),
+                'attachment' => UploadedFile::fake()->image('shot.jpg'),
             ], ['Accept' => 'application/json'])
             ->assertOk();
 

@@ -18,11 +18,11 @@ class RegisterController extends Controller
 
         $query = http_build_query([
             'client_id' => config('app.oauth_client_id'),
-            'redirect_uri' => route('login'),
+            'redirect_uri' => route('auth.redirect'),
         ]);
 
-        $url = config('app.oauth_server_url') . '/register?' . $query;
+        $url = config('app.oauth_server_url').'/register?'.$query;
 
-        return redirect()->to($url);
+        return redirect()->away($url);
     }
 }

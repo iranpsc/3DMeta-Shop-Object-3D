@@ -7,7 +7,7 @@ use App\Parsian\Parsian;
  *
  * @return Parsian
  */
-if (!function_exists('parsian')) {
+if (! function_exists('parsian')) {
     function parsian(): Parsian
     {
         return app(Parsian::class);
