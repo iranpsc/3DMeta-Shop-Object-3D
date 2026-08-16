@@ -3,7 +3,6 @@
 namespace App\Parsian;
 
 use Illuminate\Http\RedirectResponse;
-use App\Parsian\Error;
 
 class RequestResponse
 {
@@ -24,7 +23,8 @@ class RequestResponse
 
     /**
      * RequestResponse constructor.
-     * @param $result The response data.
+     *
+     * @param  $result  The response data.
      */
     public function __construct($result)
     {
@@ -35,6 +35,7 @@ class RequestResponse
 
     /**
      * Check if the response indicates success.
+     *
      * @return bool True if the response is successful, false otherwise.
      */
     public function success(): bool
@@ -44,6 +45,7 @@ class RequestResponse
 
     /**
      * Get the message associated with the response.
+     *
      * @return string The response message.
      */
     public function message(): string
@@ -53,6 +55,7 @@ class RequestResponse
 
     /**
      * Get the token associated with the response.
+     *
      * @return string The response token.
      */
     public function token(): string
@@ -62,21 +65,23 @@ class RequestResponse
 
     /**
      * Get the URL for redirecting the user to complete the payment.
+     *
      * @return string The redirect URL.
      */
     public function url(): string
     {
-        if (!$this->success()) {
+        if (! $this->success()) {
             return null;
         }
 
         $url = 'https://pec.shaparak.ir/NewIPG/?Token=';
 
-        return $url . $this->token;
+        return $url.$this->token;
     }
 
     /**
      * Get the redirect response for completing the payment.
+     *
      * @return RedirectResponse|null The redirect response, or null if the response is not successful.
      */
     public function redirect(): ?RedirectResponse

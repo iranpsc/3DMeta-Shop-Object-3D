@@ -2,18 +2,22 @@
 
 namespace App\Imports;
 
+use App\Models\Attribute;
+use App\Models\Category;
 use App\Models\Image;
+use App\Models\Product;
+use App\Models\Tag;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToArray;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class ProductImport implements ToArray, WithChunkReading, ShouldQueue
+class ProductImport implements ShouldQueue, ToArray, WithChunkReading
 {
     /**
      * Import an array of products.
      *
-     * @param array $array The array of products to import.
+     * @param  array  $array  The array of products to import.
      * @return void
      */
     public function array(array $array)
@@ -23,8 +27,9 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
                 continue; // Skip the header row
             }
 
-            if(empty($row[0])) {
-                Log::warning('Row ' . ($rowNumber + 1) . ' is empty. Skipping...');
+            if (empty($row[0])) {
+                Log::warning('Row '.($rowNumber + 1).' is empty. Skipping...');
+
                 continue;
             }
 
@@ -48,7 +53,7 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Create categories and return their IDs.
      *
-     * @param array $categories The array of category names.
+     * @param  array  $categories  The array of category names.
      * @return array The array of category IDs.
      */
     private function createCategories(array $categories): array
@@ -59,9 +64,9 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
             $category = trim($category);
             $parent_id = $index > 0 ? $categoriesIds[$index - 1] : null;
 
-            $category = \App\Models\Category::firstOrCreate([
+            $category = Category::firstOrCreate([
                 'name' => $category,
-                'parent_id' => $parent_id
+                'parent_id' => $parent_id,
             ], [
                 'slug' => str_replace(' ', '-', $category),
             ]);
@@ -75,7 +80,7 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Create tags and return their IDs.
      *
-     * @param array $tags The array of tag names.
+     * @param  array  $tags  The array of tag names.
      * @return array The array of tag IDs.
      */
     private function createTags(array $tags): array
@@ -85,7 +90,7 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
         foreach ($tags as $tag) {
             $tag = trim($tag);
 
-            $tag = \App\Models\Tag::firstOrCreate(
+            $tag = Tag::firstOrCreate(
                 ['name' => trim($tag)],
                 ['slug' => str_replace(' ', '-', $tag)]
             );
@@ -99,13 +104,13 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Create or update a product.
      *
-     * @param array $row The array representing the product data.
-     * @param array $categoriesIds The array of category IDs.
-     * @return \App\Models\Product The created or updated product.
+     * @param  array  $row  The array representing the product data.
+     * @param  array  $categoriesIds  The array of category IDs.
+     * @return Product The created or updated product.
      */
-    private function createOrUpdateProduct(array $row, array $categoriesIds): \App\Models\Product
+    private function createOrUpdateProduct(array $row, array $categoriesIds): Product
     {
-        return \App\Models\Product::updateOrCreate(
+        return Product::updateOrCreate(
             ['sku' => $row[0]],
             [
                 'category_id' => $categoriesIds[count($categoriesIds) - 1],
@@ -127,11 +132,10 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Sync the tags of a product.
      *
-     * @param \App\Models\Product $product The product to sync tags for.
-     * @param array $tagsIds The array of tag IDs.
-     * @return void
+     * @param  Product  $product  The product to sync tags for.
+     * @param  array  $tagsIds  The array of tag IDs.
      */
-    private function syncTags(\App\Models\Product $product, array $tagsIds): void
+    private function syncTags(Product $product, array $tagsIds): void
     {
         $product->tags()->sync($tagsIds);
     }
@@ -139,15 +143,14 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Sync the attributes of a product.
      *
-     * @param \App\Models\Product $product The product to sync attributes for.
-     * @param array $row The array representing the product data.
-     * @return void
+     * @param  Product  $product  The product to sync attributes for.
+     * @param  array  $row  The array representing the product data.
      */
-    private function syncAttributes(\App\Models\Product $product, array $row): void
+    private function syncAttributes(Product $product, array $row): void
     {
         for ($i = 15; $i <= count($row) - 1; $i += 3) {
             if ($row[$i] != null) {
-                $attribute = \App\Models\Attribute::where('name', trim($row[$i]))->first();
+                $attribute = Attribute::where('name', trim($row[$i]))->first();
 
                 if ($attribute) {
                     $product->attributes()->syncWithoutDetaching([$attribute->id => [
@@ -155,7 +158,7 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
                         'display' => $row[$i + 2],
                     ]]);
                 } else {
-                    $attribute = \App\Models\Attribute::create([
+                    $attribute = Attribute::create([
                         'name' => trim($row[$i]),
                         'slug' => str_replace(' ', '-', $row[$i]),
                     ]);
@@ -172,11 +175,10 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Create images for a product.
      *
-     * @param \App\Models\Product $product The product to create images for.
-     * @param array $images The array of image paths.
-     * @return void
+     * @param  Product  $product  The product to create images for.
+     * @param  array  $images  The array of image paths.
      */
-    private function createImages(\App\Models\Product $product, array $images): void
+    private function createImages(Product $product, array $images): void
     {
         $product->images()->delete();
 
@@ -194,16 +196,16 @@ class ProductImport implements ToArray, WithChunkReading, ShouldQueue
     /**
      * Create a file for a product.
      *
-     * @param \App\Models\Product $product The product to create a file for.
-     * @param string $filePath The file path.
-     * @return void
+     * @param  Product  $product  The product to create a file for.
+     * @param  string  $filePath  The file path.
      */
-    private function createFile(\App\Models\Product $product, string $filePath): void
+    private function createFile(Product $product, string $filePath): void
     {
         // Security check: prevent path traversal
         if (strpos($filePath, '..') !== false) {
-             Log::warning("Skipping file creation for product {$product->id} due to invalid path: {$filePath}");
-             return;
+            Log::warning("Skipping file creation for product {$product->id} due to invalid path: {$filePath}");
+
+            return;
         }
 
         $product->files()->create([

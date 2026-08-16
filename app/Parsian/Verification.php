@@ -17,8 +17,8 @@ class Verification
     /**
      * Constructs a new payment verification object.
      *
-     * @param string $merchantId The merchant ID.
-     * @param int $amount The amount of the payment.
+     * @param  string  $merchantId  The merchant ID.
+     * @param  int  $amount  The amount of the payment.
      */
     public function __construct(string $merchantId, int $token)
     {
@@ -33,25 +33,22 @@ class Verification
      */
     public function send(?object $client = null)
     {
-        $url = "https://pec.shaparak.ir/NewIPGServices/Confirm/ConfirmService.asmx?WSDL";
+        $url = 'https://pec.shaparak.ir/NewIPGServices/Confirm/ConfirmService.asmx?WSDL';
 
         $client ??= new \SoapClient($url);
 
-        $params = array(
+        $params = [
             'LoginAccount' => $this->merchantId,
             'Token' => $this->token,
-        );
+        ];
 
-        $result = $client->confirmPayment(array('requestData' => $params));
+        $result = $client->confirmPayment(['requestData' => $params]);
 
         return new VerificationResponse($result);
     }
 
     /**
      * Sets the merchant id.
-     *
-     * @param string $merchantId.
-     * @return self
      */
     public function merchantId(string $merchantId): self
     {
@@ -63,8 +60,7 @@ class Verification
     /**
      * Sets the token.
      *
-     * @param int $token The token.
-     * @return self
+     * @param  int  $token  The token.
      */
     public function token(int $token): self
     {

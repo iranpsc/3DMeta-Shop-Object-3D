@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserAssetController extends Controller
@@ -12,7 +13,7 @@ class UserAssetController extends Controller
     /**
      * Get the categories of the user's products.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function getCategories()
     {
@@ -52,8 +53,7 @@ class UserAssetController extends Controller
     /**
      * Get the products of the user's category.
      *
-     * @param \App\Models\Category $category
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function getCategoryProducts(Category $category)
     {
@@ -95,8 +95,7 @@ class UserAssetController extends Controller
     /**
      * Get the product of the user.
      *
-     * @param \App\Models\Product $product
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function getProduct(Product $product)
     {
@@ -111,7 +110,7 @@ class UserAssetController extends Controller
             'images' => $product->images->map(function ($image) {
                 return $image->url;
             }),
-            'attributes' => $product->attributes->map(function ($attribute) : array {
+            'attributes' => $product->attributes->map(function ($attribute): array {
                 return [
                     'id' => $attribute->id,
                     'name' => $attribute->name,
@@ -124,8 +123,7 @@ class UserAssetController extends Controller
     /**
      * Search the products of the user.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function search(Request $request)
     {
@@ -136,7 +134,7 @@ class UserAssetController extends Controller
         $user = request()->user();
 
         if (request()->query('defaults') == true) {
-            $products = Product::where('name', 'like', '%' . $request->query('q') . '%')
+            $products = Product::where('name', 'like', '%'.$request->query('q').'%')
                 ->with('oldestImage')
                 ->get();
 
@@ -149,7 +147,7 @@ class UserAssetController extends Controller
             });
         } else {
             $products = $user->products()
-                ->where('name', 'like', '%' . $request->query('q') . '%')
+                ->where('name', 'like', '%'.$request->query('q').'%')
                 ->with('oldestImage')
                 ->withPivot('quantity')
                 ->orderByPivot('updated_at', 'desc')
@@ -171,7 +169,7 @@ class UserAssetController extends Controller
     /**
      * Get the avatars of the user.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function getAvatars()
     {
@@ -221,9 +219,7 @@ class UserAssetController extends Controller
     /**
      * Get the avatar of the user.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param int $avatarId
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function getAvatar(Request $request, int $avatarId)
     {

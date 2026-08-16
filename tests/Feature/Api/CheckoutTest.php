@@ -83,7 +83,7 @@ class CheckoutTest extends TestCase
             ->assertJsonPath('data.action', 'login')
             ->assertJsonPath(
                 'data.redirect_url',
-                route('login', ['intended' => 'http://localhost:3000/checkout'])
+                route('auth.redirect', ['intended' => 'http://localhost:3000/checkout'])
             );
     }
 
@@ -96,7 +96,7 @@ class CheckoutTest extends TestCase
             'intended' => 'https://evil.example/phish',
         ])
             ->assertOk()
-            ->assertJsonPath('data.redirect_url', route('login'));
+            ->assertJsonPath('data.redirect_url', route('auth.redirect'));
     }
 
     public function test_checkout_account_returns_register_redirect_url(): void
@@ -111,7 +111,7 @@ class CheckoutTest extends TestCase
             ->assertJsonPath('data.action', 'register')
             ->assertJsonPath(
                 'data.redirect_url',
-                route('register', ['intended' => 'http://localhost:3000/checkout'])
+                route('auth.register', ['intended' => 'http://localhost:3000/checkout'])
             );
     }
 

@@ -4,9 +4,11 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FileUploadController;
 use App\Models\File;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,10 +19,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('guest')->prefix('auth')->group(function () {
+Route::middleware('guest')->prefix('auth')->as('auth.')->group(function () {
     Route::get('/register', RegisterController::class)->name('register');
-    Route::get('/redirect', [LoginController::class, 'redirect'])->name('login');
-    Route::get('/callback', [LoginController::class, 'callback'])->name('auth.callback');
+    Route::get('/redirect', [LoginController::class, 'redirect'])->name('redirect');
+    Route::get('/callback', [LoginController::class, 'callback'])->name('callback');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
@@ -42,9 +44,9 @@ Route::post('/callback', function (Request $request) {
     // Bank POSTs are cross-site, so SameSite=Lax omits the session cookie.
     // Starting a new session here would Set-Cookie and wipe the user's auth session
     // before the browser follows the redirect to the Next.js /verify page.
-    \Illuminate\Session\Middleware\StartSession::class,
-    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
     // Even when /callback is CSRF-excepted, PreventRequestForgery still calls
     // session()->token() afterward to set the XSRF-TOKEN cookie on the response.
-    \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+    PreventRequestForgery::class,
 ]);

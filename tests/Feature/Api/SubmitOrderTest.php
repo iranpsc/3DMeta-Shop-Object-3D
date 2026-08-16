@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\SubmitOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -51,7 +52,7 @@ class SubmitOrderTest extends TestCase
             ->assertCreated();
 
         $this->assertDatabaseCount('submit_orders', 1);
-        $this->assertNotNull(\App\Models\SubmitOrder::first()->attachment);
+        $this->assertNotNull(SubmitOrder::first()->attachment);
     }
 
     public function test_authenticated_user_uses_profile_fields(): void

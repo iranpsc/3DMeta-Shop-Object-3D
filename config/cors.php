@@ -21,11 +21,10 @@ return [
 
     'allowed_origins' => array_values(array_unique(array_filter(array_merge(
         [
-            'https://3d.irpsc.com',
+            'https://model3d.ir',
             'https://world.metarang.com',
             'https://dev-reactjs.metarang.com',
             'https://dev-nextjs.metarang.com',
-            'https://3d.irpsc.com',
             'http://localhost:3000',
             'http://127.0.0.1:3000',
         ],

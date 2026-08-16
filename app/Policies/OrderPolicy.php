@@ -14,6 +14,6 @@ class OrderPolicy
 
     public function pay(User $user, Order $order)
     {
-        return $order->user->is($user) && !$order->isPaid();
+        return $order->user->is($user) && ! $order->isPaid();
     }
 }

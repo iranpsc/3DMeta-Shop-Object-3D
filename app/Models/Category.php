@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
@@ -20,7 +24,7 @@ class Category extends Model implements Sitemapable
     ];
 
     protected $casts = [
-        'parent_id' => 'integer'
+        'parent_id' => 'integer',
     ];
 
     /**
@@ -78,7 +82,7 @@ class Category extends Model implements Sitemapable
 
             array_unshift(
                 $parts,
-                '<a href="' . url('categories/' . $category->url) . '">' . e($category->name) . '</a>'
+                '<a href="'.url('categories/'.$category->url).'">'.e($category->name).'</a>'
             );
 
             $category->loadMissing('parent');
@@ -97,11 +101,11 @@ class Category extends Model implements Sitemapable
     /**
      * Convert the category to a sitemap tag.
      *
-     * @return \Illuminate\Contracts\Routing\UrlGenerator|string|array
+     * @return UrlGenerator|string|array
      */
     public function toSitemapTag(): Url|string|array
     {
-        $url = Url::create(url('categories/' . $this->url))
+        $url = Url::create(url('categories/'.$this->url))
             ->setLastModificationDate($this->updated_at)
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY)
             ->setPriority(0.8);
@@ -112,7 +116,7 @@ class Category extends Model implements Sitemapable
     /**
      * Get the parent category that owns the category.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function parent()
     {
@@ -122,7 +126,7 @@ class Category extends Model implements Sitemapable
     /**
      * Get the children categories for the category.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function children()
     {
@@ -132,7 +136,7 @@ class Category extends Model implements Sitemapable
     /**
      * Get the products for the category.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function products()
     {
@@ -142,7 +146,7 @@ class Category extends Model implements Sitemapable
     /**
      * Get the image for the category.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function image()
     {

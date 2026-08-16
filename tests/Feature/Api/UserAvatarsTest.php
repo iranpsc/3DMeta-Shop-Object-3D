@@ -3,8 +3,10 @@
 namespace Tests\Feature\Api;
 
 use App\Jobs\DownloadFileJob;
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -29,8 +31,8 @@ class UserAvatarsTest extends TestCase
     {
         Bus::fake();
         $user = User::factory()->create();
-        \App\Models\Tag::factory()->create();
-        \App\Models\Attribute::factory()->create();
+        Tag::factory()->create();
+        Attribute::factory()->create();
         Product::factory()->create([
             'category_id' => Category::factory()->create()->id,
             'sku' => '3D-rgb-10010',

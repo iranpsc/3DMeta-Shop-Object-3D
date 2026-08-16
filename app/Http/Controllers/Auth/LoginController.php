@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\IntendedUrl;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Exception\InvalidArgumentException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
     /**
      * Redirect the user to the OAuth Server.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function redirect(Request $request)
     {
@@ -33,14 +33,14 @@ class LoginController extends Controller
 
         $query = http_build_query([
             'client_id' => config('app.oauth_client_id'),
-            'redirect_uri' => config('app.url') . '/auth/callback',
+            'redirect_uri' => route('auth.callback'),
             'response_type' => 'code',
             'scope' => '',
             'state' => $state,
             // 'prompt' => '', // "none", "consent", or "login"
         ]);
 
-        $url = config('app.oauth_server_url') . '/oauth/authorize?' . $query;
+        $url = config('app.oauth_server_url').'/oauth/authorize?'.$query;
 
         return redirect()->away($url);
     }
@@ -48,8 +48,7 @@ class LoginController extends Controller
     /**
      * Obtain the user information from the OAuth Server.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function callback(Request $request)
     {
@@ -61,19 +60,19 @@ class LoginController extends Controller
             'Invalid state value.'
         );
 
-        $response = Http::asForm()->post(config('app.oauth_server_url') . '/oauth/token', [
+        $response = Http::asForm()->post(config('app.oauth_server_url').'/oauth/token', [
             'grant_type' => 'authorization_code',
             'client_id' => config('app.oauth_client_id'),
             'client_secret' => config('app.oauth_client_secret'),
-            'redirect_uri' => config('app.url') . '/auth/callback',
+            'redirect_uri' => route('auth.callback'),
             'code' => $request->code,
         ]);
 
         $user = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $response['access_token'],
+            'Authorization' => 'Bearer '.$response['access_token'],
         ])
             ->acceptJson()
-            ->get(config('app.oauth_server_url') . '/api/user');
+            ->get(config('app.oauth_server_url').'/api/user');
 
         $user = User::updateOrCreate(
             ['email' => $user['email']],
@@ -106,8 +105,7 @@ class LoginController extends Controller
     /**
      * Logout the user from the application.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function logout(Request $request)
     {

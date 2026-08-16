@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Sitemap\Contracts\Sitemapable;
 use Spatie\Sitemap\Tags\Url;
 
@@ -16,7 +17,7 @@ class Tag extends Model implements Sitemapable
     /**
      * Get the products for the tag.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function products()
     {
@@ -30,7 +31,7 @@ class Tag extends Model implements Sitemapable
 
     public function getUrlAttribute()
     {
-        return url('/tags/' . trim($this->slug));
+        return url('/tags/'.trim($this->slug));
     }
 
     public function toSitemapTag(): Url|string|array

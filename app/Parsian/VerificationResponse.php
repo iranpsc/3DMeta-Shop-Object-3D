@@ -2,8 +2,6 @@
 
 namespace App\Parsian;
 
-use App\Parsian\Error;
-
 class VerificationResponse
 {
     /**
@@ -24,7 +22,7 @@ class VerificationResponse
     /**
      * VerificationResponse constructor.
      *
-     * @param $result The response data.
+     * @param  $result  The response data.
      */
     public function __construct($result)
     {
@@ -47,7 +45,7 @@ class VerificationResponse
      *
      * @return string|null The response card hash.
      */
-    public function cardHash(): string|null
+    public function cardHash(): ?string
     {
         return $this->card_hash;
     }

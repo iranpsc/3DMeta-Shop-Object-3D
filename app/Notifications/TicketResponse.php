@@ -4,8 +4,6 @@ namespace App\Notifications;
 
 use App\Models\Ticket;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 class TicketResponse extends Notification
@@ -44,7 +42,7 @@ class TicketResponse extends Notification
             'time' => now()->diffForHumans(),
             'sender' => 'پشتیبانی',
             'message' => 'پاسخ جدیدی برای تیکت شما ثبت شد.',
-            'url' => rtrim((string) config('app.frontend_url'), '/') . '/tickets/' . $this->ticket->getKey(),
+            'url' => rtrim((string) config('app.frontend_url'), '/').'/tickets/'.$this->ticket->getKey(),
         ];
     }
 }

@@ -2,25 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\SecureFile;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Pion\Laravel\ChunkUpload\Receiver\FileReceiver;
-use Pion\Laravel\ChunkUpload\Exceptions\UploadMissingFileException;
-use Pion\Laravel\ChunkUpload\Handler\HandlerFactory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
-use App\Rules\SecureFile;
+use Illuminate\Support\Str;
+use Pion\Laravel\ChunkUpload\Exceptions\UploadFailedException;
+use Pion\Laravel\ChunkUpload\Exceptions\UploadMissingFileException;
+use Pion\Laravel\ChunkUpload\Handler\HandlerFactory;
+use Pion\Laravel\ChunkUpload\Receiver\FileReceiver;
 
 class FileUploadController extends Controller
 {
     /**
      * Handles the file upload
      *
-     * @param Request $request
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      *
      * @throws UploadMissingFileException
-     * @throws \Pion\Laravel\ChunkUpload\Exceptions\UploadFailedException
+     * @throws UploadFailedException
      */
     public function upload(Request $request)
     {
@@ -29,7 +31,7 @@ class FileUploadController extends Controller
 
         // check if the upload is success, throw exception or return response you need
         if ($receiver->isUploaded() === false) {
-            throw new UploadMissingFileException();
+            throw new UploadMissingFileException;
         }
 
         // receive the file
@@ -47,24 +49,23 @@ class FileUploadController extends Controller
         $handler = $save->handler();
 
         return response()->json([
-            "done" => $handler->getPercentageDone(),
+            'done' => $handler->getPercentageDone(),
         ]);
     }
 
     /**
-     * @return \Pion\Laravel\ChunkUpload\Receiver\FileReceiver
+     * @return FileReceiver
      */
     protected function makeReceiver(Request $request)
     {
-        return new FileReceiver("file", $request, HandlerFactory::classFromRequest($request));
+        return new FileReceiver('file', $request, HandlerFactory::classFromRequest($request));
     }
 
     /**
      * Saves the file
      *
-     * @param UploadedFile $file
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     protected function saveFile(UploadedFile $file)
     {
@@ -84,11 +85,11 @@ class FileUploadController extends Controller
         // Group files by mime type
         $mime = str_replace('/', '-', $file->getMimeType());
         // Group files by the date week
-        $dateFolder = date("Y-m-d");
+        $dateFolder = date('Y-m-d');
 
         // Build the file path
         $filePath = "upload/{$mime}/{$dateFolder}/";
-        $finalPath = storage_path("app/" . $filePath);
+        $finalPath = storage_path('app/'.$filePath);
 
         // move the file name
         $file->move($finalPath, $fileName);
@@ -103,38 +104,39 @@ class FileUploadController extends Controller
 
     /**
      * Create unique filename for uploaded file
-     * @param UploadedFile $file
+     *
      * @return string
      */
     protected function createFilename(UploadedFile $file)
     {
         $extension = $file->getClientOriginalExtension();
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $filename = \Illuminate\Support\Str::slug($originalName);
+        $filename = Str::slug($originalName);
 
         // Add timestamp hash to name of the file
-        $filename .= "_" . md5(time()) . "." . $extension;
+        $filename .= '_'.md5(time()).'.'.$extension;
 
         return $filename;
     }
 
     /**
      * Format file size to human readable format
-     * @param int $bytes
+     *
+     * @param  int  $bytes
      * @return string
      */
     protected function formatSizeUnits($bytes)
     {
         if ($bytes >= 1073741824) {
-            $bytes = number_format($bytes / 1073741824, 2) . ' GB';
+            $bytes = number_format($bytes / 1073741824, 2).' GB';
         } elseif ($bytes >= 1048576) {
-            $bytes = number_format($bytes / 1048576, 2) . ' MB';
+            $bytes = number_format($bytes / 1048576, 2).' MB';
         } elseif ($bytes >= 1024) {
-            $bytes = number_format($bytes / 1024, 2) . ' KB';
+            $bytes = number_format($bytes / 1024, 2).' KB';
         } elseif ($bytes > 1) {
-            $bytes = $bytes . ' bytes';
+            $bytes = $bytes.' bytes';
         } elseif ($bytes == 1) {
-            $bytes = $bytes . ' byte';
+            $bytes = $bytes.' byte';
         } else {
             $bytes = '0 bytes';
         }

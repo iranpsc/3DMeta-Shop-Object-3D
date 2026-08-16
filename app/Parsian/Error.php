@@ -11,7 +11,8 @@ class Error
 
     /**
      * Error constructor.
-     * @param string $code The error code.
+     *
+     * @param  string  $code  The error code.
      */
     public function __construct(int $code)
     {

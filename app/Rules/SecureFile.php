@@ -9,13 +9,14 @@ use Illuminate\Http\UploadedFile;
 class SecureFile implements ValidationRule
 {
     protected $allowedExtensions;
+
     protected $maxSize; // in Kilobytes
 
     /**
-     * @param array $allowedExtensions List of allowed file extensions (e.g. ['jpg', 'png'])
-     * @param int|null $maxSize Max size in KB (optional, but recommended if not handled elsewhere)
+     * @param  array  $allowedExtensions  List of allowed file extensions (e.g. ['jpg', 'png'])
+     * @param  int|null  $maxSize  Max size in KB (optional, but recommended if not handled elsewhere)
      */
-    public function __construct(array $allowedExtensions = [], int $maxSize = null)
+    public function __construct(array $allowedExtensions = [], ?int $maxSize = null)
     {
         $this->allowedExtensions = array_map('strtolower', $allowedExtensions);
         $this->maxSize = $maxSize;
@@ -23,30 +24,34 @@ class SecureFile implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!$value instanceof UploadedFile) {
+        if (! $value instanceof UploadedFile) {
             $fail('The :attribute must be a valid file.');
+
             return;
         }
 
         // 1. Check upload errors
         if ($value->getError() !== UPLOAD_ERR_OK) {
             $fail("The :attribute failed to upload (Error code: {$value->getError()}).");
+
             return;
         }
 
         // 2. Check Size (if configured)
         if ($this->maxSize && $value->getSize() > $this->maxSize * 1024) {
-             $fail("The :attribute must not be greater than {$this->maxSize} kilobytes.");
-             return;
+            $fail("The :attribute must not be greater than {$this->maxSize} kilobytes.");
+
+            return;
         }
 
         $extension = strtolower($value->getClientOriginalExtension());
         $filename = $value->getClientOriginalName();
 
         // 3. Allowed Extensions Whitelist
-        if (!empty($this->allowedExtensions)) {
-            if (!in_array($extension, $this->allowedExtensions)) {
+        if (! empty($this->allowedExtensions)) {
+            if (! in_array($extension, $this->allowedExtensions)) {
                 $fail("The :attribute extension (.$extension) is not allowed.");
+
                 return;
             }
         }
@@ -55,13 +60,15 @@ class SecureFile implements ValidationRule
         // Prevents bypassing Apache/Nginx rules (e.g., shell.php.jpg, .htaccess)
         if (preg_match('/\.(php|phtml|phar|pl|py|cgi|asp|aspx|jsp|exe|sh|bat|cmd|vbs|htaccess|htpasswd)\./i', $filename)) {
             $fail('The :attribute filename contains forbidden characters or extensions.');
+
             return;
         }
 
         // 5. Null Byte Injection
         if (strpos($filename, "\0") !== false || strpos($value->getRealPath(), "\0") !== false) {
-             $fail('The :attribute contains invalid characters.');
-             return;
+            $fail('The :attribute contains invalid characters.');
+
+            return;
         }
 
         // 6. MIME Type & Magic Bytes Check
@@ -81,8 +88,9 @@ class SecureFile implements ValidationRule
         ];
 
         if (isset($strictMimeMap[$extension])) {
-            if (!in_array($mime, $strictMimeMap[$extension])) {
+            if (! in_array($mime, $strictMimeMap[$extension])) {
                 $fail("The :attribute content type ($mime) does not match its extension (.$extension).");
+
                 return;
             }
         }
@@ -113,12 +121,14 @@ class SecureFile implements ValidationRule
                 foreach ($blacklist as $pattern) {
                     if (stripos($content, $pattern) !== false) {
                         $fail('The :attribute contains malicious code or forbidden patterns.');
+
                         return;
                     }
                 }
             } catch (\Exception $e) {
                 // If we can't read the file, fail safe
                 $fail('The :attribute could not be scanned for security.');
+
                 return;
             }
         }

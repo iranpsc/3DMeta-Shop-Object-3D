@@ -3,7 +3,10 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -160,7 +163,7 @@ class ProductTest extends TestCase
         ]);
 
         // Bypass approved scope on relation for pending review
-        \App\Models\Review::query()->create([
+        Review::query()->create([
             'product_id' => $product->id,
             'user_id' => User::factory()->create()->id,
             'comment' => 'Pending review text',
@@ -189,7 +192,7 @@ class ProductTest extends TestCase
             'sku' => 'REV-REPLY',
         ]);
 
-        $review = \App\Models\Review::query()->create([
+        $review = Review::query()->create([
             'product_id' => $product->id,
             'user_id' => User::factory()->create()->id,
             'comment' => 'Parent review text',
@@ -286,14 +289,14 @@ class ProductTest extends TestCase
             'size' => '3 MB',
         ]);
 
-        $order = \App\Models\Order::create([
+        $order = Order::create([
             'user_id' => $user->id,
             'amount' => 100000,
             'tracking_id' => random_int(10000000000, 99999999999),
             'status' => 0,
         ]);
 
-        \App\Models\OrderItem::create([
+        OrderItem::create([
             'order_id' => $order->id,
             'product_id' => $product->id,
             'quantity' => 1,

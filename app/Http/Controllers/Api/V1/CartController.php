@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class CartController extends Controller
 {
@@ -61,7 +62,7 @@ class CartController extends Controller
     /**
      * @param  array{
      *     items: array<int, array{product_id: int, quantity: int}>,
-     *     products: \Illuminate\Support\Collection<int, Product>,
+     *     products: Collection<int, Product>,
      *     count: int,
      *     total_price: float
      * }  $snapshot

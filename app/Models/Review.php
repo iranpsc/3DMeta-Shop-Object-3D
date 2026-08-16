@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Review extends Model
 {
@@ -31,7 +35,7 @@ class Review extends Model
     /**
      * Get the product that owns the review.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function product()
     {
@@ -41,7 +45,7 @@ class Review extends Model
     /**
      * Get the user that owns the review.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function user()
     {
@@ -51,8 +55,8 @@ class Review extends Model
     /**
      * Scope a query to only include approved reviews.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeApproved($query)
     {
@@ -62,7 +66,7 @@ class Review extends Model
     /**
      * Set the approved_at and approved_by attributes.
      *
-     * @param string $approved_by
+     * @param  string  $approved_by
      * @return void
      */
     public function approve($approved_by)
@@ -76,16 +80,17 @@ class Review extends Model
     /**
      * Get the likes for the review.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
-    public function likes() {
+    public function likes()
+    {
         return $this->morphMany(Interaction::class, 'interactable')->type('like');
     }
 
     /**
      * Get the replies for the review.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function replies()
     {

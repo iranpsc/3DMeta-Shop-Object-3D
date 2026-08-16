@@ -2,16 +2,18 @@
 
 namespace App\Services;
 
+use App\Imports\ProductImport;
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\File;
 use App\Models\Image;
 use App\Models\Product;
+use App\Models\Tag;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\ProductImport;
 use Morilog\Jalali\Jalalian;
 
 class AdminProductService
@@ -57,8 +59,8 @@ class AdminProductService
     {
         return [
             'categories' => Category::with('children')->get(),
-            'tags' => \App\Models\Tag::select('id', 'name', 'slug')->get(),
-            'attributes' => \App\Models\Attribute::select('id', 'name', 'slug')->get(),
+            'tags' => Tag::select('id', 'name', 'slug')->get(),
+            'attributes' => Attribute::select('id', 'name', 'slug')->get(),
             'next_sku' => $this->nextSku(),
         ];
     }

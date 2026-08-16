@@ -54,10 +54,10 @@ class CartTest extends TestCase
 
         $this->withHeaders($this->statefulApiHeaders())
             ->withSession([
-            'cart' => [
-                ['product_id' => $product->id, 'quantity' => 1],
-            ],
-        ])
+                'cart' => [
+                    ['product_id' => $product->id, 'quantity' => 1],
+                ],
+            ])
             ->postJson("/api/v1/cart/{$product->id}")
             ->assertOk()
             ->assertJsonPath('message', 'Duplicate Item قبلا به سبد خرید اضافه شده است.');
@@ -69,10 +69,10 @@ class CartTest extends TestCase
 
         $this->withHeaders($this->statefulApiHeaders())
             ->withSession([
-            'cart' => [
-                ['product_id' => $product->id, 'quantity' => 1],
-            ],
-        ])
+                'cart' => [
+                    ['product_id' => $product->id, 'quantity' => 1],
+                ],
+            ])
             ->putJson("/api/v1/cart/{$product->id}", ['quantity' => 3])
             ->assertOk()
             ->assertJsonPath('data.items.0.quantity', 3);
@@ -84,10 +84,10 @@ class CartTest extends TestCase
 
         $this->withHeaders($this->statefulApiHeaders())
             ->withSession([
-            'cart' => [
-                ['product_id' => $product->id, 'quantity' => 1],
-            ],
-        ])
+                'cart' => [
+                    ['product_id' => $product->id, 'quantity' => 1],
+                ],
+            ])
             ->deleteJson("/api/v1/cart/{$product->id}")
             ->assertOk()
             ->assertJsonPath('data.count', 0)
@@ -103,10 +103,10 @@ class CartTest extends TestCase
 
         $this->withHeaders($this->statefulApiHeaders())
             ->withSession([
-            'cart' => [
-                ['product_id' => $product->id, 'quantity' => 2],
-            ],
-        ])
+                'cart' => [
+                    ['product_id' => $product->id, 'quantity' => 2],
+                ],
+            ])
             ->getJson('/api/v1/cart')
             ->assertOk()
             ->assertJsonPath('data.total_price', $product->final_price * 2);

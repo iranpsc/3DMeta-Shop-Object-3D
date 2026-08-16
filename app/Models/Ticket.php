@@ -17,7 +17,7 @@ class Ticket extends Model
         'attachment',
         'closed_at',
         'user_id',
-        'response_status'
+        'response_status',
     ];
 
     public function responses()

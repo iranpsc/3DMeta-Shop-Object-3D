@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\ReviewReply;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
 
 class ReviewService
@@ -13,7 +14,7 @@ class ReviewService
     /**
      * Approved reviews payload for a product (parity with Reviews Livewire).
      *
-     * @return array{reviews: \Illuminate\Database\Eloquent\Collection, rating_breakdown: array<string, int>, users_count: int}
+     * @return array{reviews: Collection, rating_breakdown: array<string, int>, users_count: int}
      */
     public function forProduct(Product $product): array
     {

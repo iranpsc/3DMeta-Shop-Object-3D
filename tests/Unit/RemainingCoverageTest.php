@@ -21,13 +21,21 @@ use App\Models\Ticket;
 use App\Models\TicketResponse;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Parsian\RequestResponse;
+use App\Parsian\Verification;
 use App\Rules\SecureFile;
 use App\Services\AvatarService;
 use App\Services\ProductService;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class RemainingCoverageTest extends TestCase
@@ -79,11 +87,11 @@ class RemainingCoverageTest extends TestCase
         $this->assertSame('loop', $cycled->fresh()->url);
         $this->assertStringContainsString('loop', $cycled->fresh()->breadcrumb);
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class, (new Attribute)->products());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, (new File)->product());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class, (new Image)->imageable());
+        $this->assertInstanceOf(BelongsToMany::class, (new Attribute)->products());
+        $this->assertInstanceOf(BelongsTo::class, (new File)->product());
+        $this->assertInstanceOf(MorphTo::class, (new Image)->imageable());
         $this->assertSame('user', $user->role());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $user->tickets());
+        $this->assertInstanceOf(HasMany::class, $user->tickets());
 
         ContactUsMessage::create([
             'name' => 'A',
@@ -115,16 +123,16 @@ class RemainingCoverageTest extends TestCase
         ]);
         $this->assertTrue($txn->order->is($order));
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $product->orders());
+        $this->assertInstanceOf(HasMany::class, $product->orders());
         $this->assertTrue($product->hasOrders());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphMany::class, $product->shares());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphMany::class, $product->downloads());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphMany::class, $product->views());
+        $this->assertInstanceOf(MorphMany::class, $product->shares());
+        $this->assertInstanceOf(MorphMany::class, $product->downloads());
+        $this->assertInstanceOf(MorphMany::class, $product->views());
     }
 
     public function test_product_setters_and_delivery_time(): void
     {
-        $product = new Product();
+        $product = new Product;
         $product->setDelevileryTimeAttribute(null);
         $this->assertArrayHasKey('delivery_time', $product->getAttributes());
 
@@ -296,7 +304,7 @@ class RemainingCoverageTest extends TestCase
     public function test_product_import_remaining_paths(): void
     {
         Category::factory()->count(2)->create();
-        $import = new ProductImport();
+        $import = new ProductImport;
 
         $data = [
             ['sku', 'name', 'published', 'short_description', 'long_description', 'stock_status', 'quantity', 'delivery_time', 'customer_can_add_review', 'sale_price', 'price', 'categories', 'tags', 'images', 'file'],
@@ -309,14 +317,14 @@ class RemainingCoverageTest extends TestCase
     public function test_verification_setters(): void
     {
         config(['payment-gateway.merchant_id' => 'fallback-merchant']);
-        $verification = new \App\Parsian\Verification('m', 1);
+        $verification = new Verification('m', 1);
         $this->assertSame($verification, $verification->merchantId('m-2'));
         $this->assertSame($verification, $verification->token(99));
     }
 
     public function test_request_response_url_null_on_failure_is_caught(): void
     {
-        $response = new \App\Parsian\RequestResponse((object) [
+        $response = new RequestResponse((object) [
             'SalePaymentRequestResult' => (object) [
                 'Status' => -1,
                 'Message' => 'fail',
@@ -334,7 +342,7 @@ class RemainingCoverageTest extends TestCase
 
     public function test_rate_limiter_callback_executes(): void
     {
-        $limiter = \Illuminate\Support\Facades\RateLimiter::limiter('api');
+        $limiter = RateLimiter::limiter('api');
         $this->assertNotNull($limiter);
 
         $guest = $limiter(Request::create('/api/v1/products', 'GET'));
