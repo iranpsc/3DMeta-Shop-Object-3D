@@ -111,6 +111,11 @@ FRONTEND_URL=https://example.com
 SESSION_DOMAIN=.example.com
 SANCTUM_STATEFUL_DOMAINS=example.com,api.example.com
 CORS_ALLOWED_ORIGINS=https://example.com
+
+# OAuth / SSO (Passport server — must be the public SSO URL, not this API)
+OAUTH_SERVER_URL=https://accounts.example.com
+OAUTH_CLIENT_ID=your-passport-client-id
+OAUTH_CLIENT_SECRET=your-passport-client-secret
 ```
 
 ### Notes
@@ -122,6 +127,8 @@ CORS_ALLOWED_ORIGINS=https://example.com
 | `RUN_MIGRATIONS` | `true` runs `php artisan migrate --force` on container start |
 | `DB_HOST` / `REDIS_HOST` | Already set in compose to `mysql` / `redis` service names — do not point them at `localhost` |
 | `CACHE_DRIVER` / `SESSION_DRIVER` / `QUEUE_CONNECTION` | Set to `redis` in compose |
+| `OAUTH_SERVER_URL` | Public HTTPS URL of the SSO/Passport server (e.g. `https://accounts.example.com`). **Not** `APP_URL`. Used for `/auth/redirect` and token exchange |
+| `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | Passport client credentials; redirect URI on the SSO server must be `https://api.example.com/auth/callback` |
 
 Use strong unique passwords for `DB_PASSWORD` and `DB_ROOT_PASSWORD`.
 
@@ -319,6 +326,7 @@ docker compose down
 | Composer platform / PHP errors | Wrong PHP version | Image must be PHP **8.4** (default in Dockerfile) |
 | Sessions / auth break after restart | `APP_KEY` regenerated each boot | Set a permanent `APP_KEY` in Dokploy Environment |
 | CORS / Sanctum cookie issues | Domain mismatch | Update `FRONTEND_URL`, `SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS` |
+| Login redirects to `/oauth/authorize` on the API (404) | `OAUTH_SERVER_URL` missing, wrong, or not passed into the container | Set `OAUTH_SERVER_URL` to the SSO public URL in Dokploy Environment, ensure it is mapped in `docker-compose.yml`, redeploy, then verify `php artisan tinker --execute="dump(config('app.oauth_server_url'));"` |
 | Migrations not applied | `RUN_MIGRATIONS=false` or DB not ready | Set `RUN_MIGRATIONS=true` or run `php artisan migrate --force` in the app terminal |
 | Uploaded files lost after redeploy | Bind mounts missing or wrong path | Ensure `/opt/3dmeta/storage/app` and `/opt/3dmeta/sitemap` exist and are mounted (see §4) |
 | Permission denied writing uploads/sitemaps | Host dir owned by root | `chown -R 82:82 /opt/3dmeta` (confirm UID with `id www-data` in the container) |
