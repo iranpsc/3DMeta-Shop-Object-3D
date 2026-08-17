@@ -24,6 +24,14 @@ class CartTest extends TestCase
         ], $overrides));
     }
 
+    public function test_guest_can_fetch_empty_cart_without_spa_origin_headers(): void
+    {
+        $this->getJson('/api/v1/cart')
+            ->assertOk()
+            ->assertJsonPath('data.items', [])
+            ->assertJsonPath('data.count', 0);
+    }
+
     public function test_guest_can_fetch_empty_cart(): void
     {
         $this->withHeaders($this->statefulApiHeaders())

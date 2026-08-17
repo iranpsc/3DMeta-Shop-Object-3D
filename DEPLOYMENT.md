@@ -94,7 +94,7 @@ Paste values into Dokploy Environment (one `KEY=value` per line):
 ```env
 # Public URL / port mapping
 APP_PORT=8080
-APP_URL=https://api.example.com
+APP_URL=https://model3d.ir
 APP_KEY=base64:REPLACE_WITH_STABLE_KEY
 
 # Database (shared by app + mysql service)
@@ -106,11 +106,14 @@ DB_ROOT_PASSWORD=CHANGE_ME_ROOT_PASSWORD
 # Boot behaviour
 RUN_MIGRATIONS=true
 
-# Frontend / Sanctum / CORS (adjust to your Next.js / SPA domains)
-FRONTEND_URL=https://example.com
-SESSION_DOMAIN=.example.com
-SANCTUM_STATEFUL_DOMAINS=example.com,api.example.com
-CORS_ALLOWED_ORIGINS=https://example.com
+# Frontend / Sanctum / CORS
+# Hosts only for SANCTUM_STATEFUL_DOMAINS and SESSION_DOMAIN — no https:// and no path (/cart).
+FRONTEND_URL=https://model3d.ir
+SESSION_DOMAIN=.model3d.ir
+SANCTUM_STATEFUL_DOMAINS=model3d.ir,www.model3d.ir
+CORS_ALLOWED_ORIGINS=https://model3d.ir,https://www.model3d.ir
+SESSION_SECURE_COOKIE=true
+SESSION_SAME_SITE=lax
 ```
 
 ### Notes
@@ -280,7 +283,7 @@ After changing env vars that affect cached config, redeploy (or clear caches) so
 
 1. **Do not publish MySQL/Redis ports** to the host. Compose uses `expose:` (internal network only) so `app` reaches them via `mysql:3306` / `redis:6379` with no host port conflicts. Keep only the API reachable via Dokploy domain routing.
 2. Set `APP_DEBUG=false` and a stable `APP_KEY`.
-3. Align `FRONTEND_URL`, `SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS`, and `CORS_ALLOWED_ORIGINS` with your real SPA domains.
+3. Align `FRONTEND_URL`, `SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS`, and `CORS_ALLOWED_ORIGINS` with your real SPA domains. Never set those Sanctum/session values to a page path such as `https://model3d.ir/cart`.
 4. Enable HTTPS on the Dokploy domain.
 5. Configure Volume Backups for `mysql_data` (and app storage if mounted).
 6. Monitor CPU/memory for `app` and `mysql` under Dokploy **Monitoring**.
@@ -318,7 +321,8 @@ docker compose down
 | `app` unhealthy / `/up` fails | App still booting, DB down, or bad env | Check `app` logs; wait for MySQL healthy; verify `APP_KEY`, DB credentials |
 | Composer platform / PHP errors | Wrong PHP version | Image must be PHP **8.4** (default in Dockerfile) |
 | Sessions / auth break after restart | `APP_KEY` regenerated each boot | Set a permanent `APP_KEY` in Dokploy Environment |
-| CORS / Sanctum cookie issues | Domain mismatch | Update `FRONTEND_URL`, `SESSION_DOMAIN`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS` |
+| CORS / Sanctum cookie issues | Domain mismatch or full URL used as host | Use hosts only: `SANCTUM_STATEFUL_DOMAINS=model3d.ir` (not `https://model3d.ir/cart`). Redeploy so `config:cache` refreshes. |
+| `Session store not set on request` | API cart/checkout without Sanctum session | Cart routes now start a session; still set stateful hosts correctly so SPA cookies work |
 | Migrations not applied | `RUN_MIGRATIONS=false` or DB not ready | Set `RUN_MIGRATIONS=true` or run `php artisan migrate --force` in the app terminal |
 | Uploaded files lost after redeploy | Bind mounts missing or wrong path | Ensure `/opt/3dmeta/storage/app` and `/opt/3dmeta/sitemap` exist and are mounted (see §4) |
 | Permission denied writing uploads/sitemaps | Host dir owned by root | `chown -R 82:82 /opt/3dmeta` (confirm UID with `id www-data` in the container) |

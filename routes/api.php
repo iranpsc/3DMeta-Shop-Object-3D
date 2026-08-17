@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\UserDashboardController;
 use App\Http\Controllers\Api\V1\UserOrderController;
 use App\Http\Controllers\Api\V1\UserProfileController;
 use App\Http\Middleware\AuthenticateWithOnceBasic;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -71,13 +72,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/{ticket}/responses', [TicketController::class, 'storeResponse']);
     });
 
-    Route::get('/cart', [CartController::class, 'show']);
-    Route::post('/cart/{product}', [CartController::class, 'store']);
-    Route::put('/cart/{product}', [CartController::class, 'update']);
-    Route::delete('/cart/{product}', [CartController::class, 'destroy']);
+    Route::middleware([StartSession::class])->group(function () {
+        Route::get('/cart', [CartController::class, 'show']);
+        Route::post('/cart/{product}', [CartController::class, 'store']);
+        Route::put('/cart/{product}', [CartController::class, 'update']);
+        Route::delete('/cart/{product}', [CartController::class, 'destroy']);
 
-    Route::get('/checkout', [CheckoutController::class, 'show']);
-    Route::post('/checkout/account', [CheckoutController::class, 'account']);
+        Route::get('/checkout', [CheckoutController::class, 'show']);
+        Route::post('/checkout/account', [CheckoutController::class, 'account']);
+    });
 
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/store-filters', [ProductController::class, 'storeFilters']);
