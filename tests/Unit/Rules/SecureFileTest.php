@@ -113,4 +113,33 @@ class SecureFileTest extends TestCase
 
         $this->assertFalse($failed);
     }
+
+    public function test_skips_extension_whitelist_when_not_configured(): void
+    {
+        $rule = new SecureFile([]);
+        $file = UploadedFile::fake()->create('model.glb', 10, 'model/gltf-binary');
+        $failed = false;
+
+        $rule->validate('attachment', $file, function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertFalse($failed);
+    }
+
+    public function test_skips_malicious_content_scan_for_large_files(): void
+    {
+        $rule = new SecureFile(['glb']);
+        $path = tempnam(sys_get_temp_dir(), 'large');
+        file_put_contents($path, '<?php'.str_repeat('a', 11 * 1024 * 1024));
+        $file = new UploadedFile($path, 'large.glb', 'model/gltf-binary', null, true);
+        $failed = false;
+
+        $rule->validate('attachment', $file, function () use (&$failed) {
+            $failed = true;
+        });
+
+        $this->assertFalse($failed);
+        @unlink($path);
+    }
 }

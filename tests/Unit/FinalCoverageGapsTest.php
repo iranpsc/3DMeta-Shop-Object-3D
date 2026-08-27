@@ -118,6 +118,22 @@ class FinalCoverageGapsTest extends TestCase
         $this->assertSame('بسته', $payload['status_label']);
     }
 
+    public function test_ticket_resource_attachment_name(): void
+    {
+        $ticket = Ticket::create([
+            'user_id' => User::factory()->create()->id,
+            'title' => 'T',
+            'message' => 'M',
+            'priority' => 'low',
+            'status' => 'open',
+            'response_status' => 'pending',
+            'attachment' => 'tickets/uploads/report.pdf',
+        ]);
+
+        $payload = (new TicketResource($ticket))->resolve();
+        $this->assertSame('report.pdf', $payload['attachment_name']);
+    }
+
     public function test_product_import_empty_sku_existing_attribute_and_path_traversal_file(): void
     {
         Category::factory()->create();
