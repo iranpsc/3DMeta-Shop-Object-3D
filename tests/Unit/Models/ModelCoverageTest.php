@@ -5,6 +5,7 @@ namespace Tests\Unit\Models;
 use App\Models\Category;
 use App\Models\Interaction;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\Tag;
 use App\Models\Ticket;
 use App\Models\User;
@@ -70,5 +71,26 @@ class ModelCoverageTest extends TestCase
         $payload = $notification->toArray($user);
         $this->assertSame('پاسخ جدید', $payload['title']);
         $this->assertStringContainsString((string) $ticket->id, $payload['url']);
+    }
+
+    public function test_review_approve_sets_metadata(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => Category::factory()->create()->id,
+        ]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Nice',
+            'rating' => 5,
+        ]);
+
+        $review->approve('Admin User');
+
+        $review = $review->fresh();
+        $this->assertTrue($review->approved);
+        $this->assertSame('Admin User', $review->approved_by);
+        $this->assertNotNull($review->approved_at);
     }
 }

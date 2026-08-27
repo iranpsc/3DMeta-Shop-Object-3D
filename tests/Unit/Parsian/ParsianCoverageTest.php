@@ -72,6 +72,25 @@ class ParsianCoverageTest extends TestCase
         $this->assertSame(-138, $response->error()->code());
     }
 
+    public function test_request_response_redirect_returns_null_on_failure(): void
+    {
+        $response = new class((object) [
+            'SalePaymentRequestResult' => (object) [
+                'Status' => -138,
+                'Message' => 'fail',
+                'Token' => 0,
+            ],
+        ]) extends RequestResponse
+        {
+            public function url(): string
+            {
+                return '';
+            }
+        };
+
+        $this->assertNull($response->redirect());
+    }
+
     public function test_verification_response_success_and_failure(): void
     {
         $ok = new VerificationResponse((object) [
