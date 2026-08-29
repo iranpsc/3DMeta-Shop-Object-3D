@@ -17,3 +17,16 @@ Artisan::command('sitemap:generate', function () {
 Schedule::command('sitemap:generate')
     ->everyThreeHours()
     ->withoutOverlapping();
+
+Artisan::command('sentry:test-exception', function () {
+    try {
+        throw new Exception('This is a test exception sent to Sentry.');
+    } catch (Exception $e) {
+        if (function_exists('sentry')) {
+            sentry()->captureException($e);
+            $this->info('Test exception was sent to Sentry.');
+        } else {
+            $this->error('Sentry is not configured.');
+        }
+    }
+})->purpose('Generate and send a test exception to the Sentry server.');
