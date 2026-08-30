@@ -15,6 +15,7 @@ use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Rules\SecureFile;
+use App\Services\AdminProductService;
 use App\Services\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -255,6 +256,20 @@ class FinalCoverageGapsTest extends TestCase
         });
 
         $this->assertNotNull($failed);
+    }
+
+    public function test_admin_product_service_is_inside_upload_directory_returns_false_for_missing_path(): void
+    {
+        $service = $this->app->make(AdminProductService::class);
+        $method = new ReflectionMethod(AdminProductService::class, 'isInsideUploadDirectory');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            $service,
+            storage_path('app/upload/does-not-exist/'.uniqid('missing-', true))
+        );
+
+        $this->assertFalse($result);
     }
 
     public function test_checkout_prepare_order_items_skips_missing_cart_products(): void
