@@ -15,6 +15,7 @@ use App\Models\Ticket;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Rules\SecureFile;
+use App\Services\AdminProductService;
 use App\Services\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -116,6 +117,22 @@ class FinalCoverageGapsTest extends TestCase
 
         $payload = (new TicketResource($ticket))->resolve();
         $this->assertSame('بسته', $payload['status_label']);
+    }
+
+    public function test_ticket_resource_attachment_name(): void
+    {
+        $ticket = Ticket::create([
+            'user_id' => User::factory()->create()->id,
+            'title' => 'T',
+            'message' => 'M',
+            'priority' => 'low',
+            'status' => 'open',
+            'response_status' => 'pending',
+            'attachment' => 'tickets/uploads/report.pdf',
+        ]);
+
+        $payload = (new TicketResource($ticket))->resolve();
+        $this->assertSame('report.pdf', $payload['attachment_name']);
     }
 
     public function test_product_import_empty_sku_existing_attribute_and_path_traversal_file(): void
@@ -239,6 +256,20 @@ class FinalCoverageGapsTest extends TestCase
         });
 
         $this->assertNotNull($failed);
+    }
+
+    public function test_admin_product_service_is_inside_upload_directory_returns_false_for_missing_path(): void
+    {
+        $service = $this->app->make(AdminProductService::class);
+        $method = new ReflectionMethod(AdminProductService::class, 'isInsideUploadDirectory');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            $service,
+            storage_path('app/upload/does-not-exist/'.uniqid('missing-', true))
+        );
+
+        $this->assertFalse($result);
     }
 
     public function test_checkout_prepare_order_items_skips_missing_cart_products(): void

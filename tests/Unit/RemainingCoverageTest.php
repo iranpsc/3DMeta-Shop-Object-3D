@@ -9,6 +9,7 @@ use App\Http\Resources\TicketResource;
 use App\Imports\ProductImport;
 use App\Models\Attribute;
 use App\Models\Category;
+use App\Models\Interaction;
 use App\Models\ContactUsMessage;
 use App\Models\File;
 use App\Models\Image;
@@ -21,8 +22,10 @@ use App\Models\Ticket;
 use App\Models\TicketResponse;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Parsian\Parsian;
 use App\Parsian\RequestResponse;
 use App\Parsian\Verification;
+use App\Providers\AppServiceProvider;
 use App\Rules\SecureFile;
 use App\Services\AvatarService;
 use App\Services\ProductService;
@@ -136,9 +139,48 @@ class RemainingCoverageTest extends TestCase
         $product->setDelevileryTimeAttribute(null);
         $this->assertArrayHasKey('delivery_time', $product->getAttributes());
 
+        $product->setDelevileryTimeAttribute(5);
+        $this->assertSame(5, $product->getAttributes()['delivery_time']);
+
         $category = Category::factory()->create();
         $product = Product::factory()->create(['category_id' => $category->id, 'slug' => 'Hello World']);
         $this->assertSame('hello-world', $product->slug);
+    }
+
+    public function test_product_bookmarks_relation(): void
+    {
+        $product = Product::factory()->create([
+            'category_id' => Category::factory()->create()->id,
+        ]);
+
+        $this->assertInstanceOf(
+            \Illuminate\Database\Eloquent\Relations\MorphMany::class,
+            $product->bookmarks()
+        );
+
+        Interaction::create([
+            'user_id' => User::factory()->create()->id,
+            'interactable_id' => $product->id,
+            'interactable_type' => Product::class,
+            'type' => 'bookmark',
+            'ip' => '127.0.0.1',
+        ]);
+
+        $this->assertTrue($product->bookmarks()->exists());
+    }
+
+    public function test_parsian_helper_resolves_gateway(): void
+    {
+        $this->assertInstanceOf(Parsian::class, parsian());
+    }
+
+    public function test_app_service_provider_forces_https_for_secure_app_url(): void
+    {
+        config(['app.url' => 'https://secure.example.com']);
+
+        (new AppServiceProvider($this->app))->boot();
+
+        $this->assertSame('https', parse_url(url('/'), PHP_URL_SCHEME));
     }
 
     public function test_ticket_and_response_helpers(): void

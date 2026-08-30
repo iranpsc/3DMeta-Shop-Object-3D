@@ -4,11 +4,15 @@ namespace Tests\Unit\Policies;
 
 use App\Models\Attribute;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\Tag;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Policies\AttributePolicy;
+use App\Policies\CategoryPolicy;
+use App\Policies\OrderPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\TagPolicy;
 use App\Policies\TicketPolicy;
@@ -79,5 +83,119 @@ class PolicyCoverageTest extends TestCase
         $this->assertTrue($policy->view($admin, $ticket));
         $this->assertTrue($policy->respond($admin, $ticket));
         $this->assertFalse($policy->update($admin, $ticket));
+    }
+
+    public function test_category_policy_branches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $policy = new CategoryPolicy;
+
+        $this->assertTrue($policy->create($admin)->allowed());
+        $this->assertTrue($policy->create($user)->denied());
+        $this->assertTrue($policy->update($admin, $category)->allowed());
+        $this->assertTrue($policy->update($user, $category)->denied());
+        $this->assertTrue($policy->delete($admin, $category)->allowed());
+
+        Product::factory()->create(['category_id' => $category->id]);
+        $this->assertTrue($policy->delete($admin, $category->fresh())->denied());
+        $this->assertTrue($policy->delete($user, $category)->denied());
+    }
+
+    public function test_order_policy_branches(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $paidOrder = Order::create([
+            'user_id' => $owner->id,
+            'amount' => 1000,
+            'tracking_id' => 11111111111,
+            'status' => 0,
+        ]);
+        $unpaidOrder = Order::create([
+            'user_id' => $owner->id,
+            'amount' => 1000,
+            'tracking_id' => 22222222222,
+            'status' => -1,
+        ]);
+        $policy = new OrderPolicy;
+
+        $this->assertTrue($policy->view($owner, $paidOrder));
+        $this->assertFalse($policy->view($owner, $unpaidOrder));
+        $this->assertFalse($policy->view($other, $paidOrder));
+        $this->assertTrue($policy->pay($owner, $unpaidOrder));
+        $this->assertFalse($policy->pay($owner, $paidOrder));
+        $this->assertFalse($policy->pay($other, $unpaidOrder));
+    }
+
+    public function test_product_policy_remaining_branches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 1000,
+            'customer_can_add_review' => true,
+        ]);
+        $policy = new ProductPolicy;
+
+        $this->assertTrue($policy->create($admin));
+        $this->assertFalse($policy->create($user));
+        $this->assertTrue($policy->update($admin, $product));
+        $this->assertFalse($policy->update($user, $product));
+        $this->assertTrue($policy->delete($admin, $product));
+        $this->assertFalse($policy->delete($user, $product));
+        $this->assertFalse($policy->download($user, $product));
+
+        $freeProduct = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 0,
+            'customer_can_add_review' => true,
+        ]);
+        $this->assertTrue($policy->download($user, $freeProduct));
+        $this->assertTrue($policy->addReview($user, $freeProduct)->allowed());
+
+        $user->products()->attach($product->id, ['quantity' => 1]);
+        $this->assertTrue($policy->addReview($user, $product)->allowed());
+
+        Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Already reviewed',
+            'rating' => 4,
+        ]);
+        $this->assertTrue($policy->addReview($user, $product->fresh())->denied());
+
+        $closedReviews = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 0,
+            'customer_can_add_review' => false,
+        ]);
+        $this->assertTrue($policy->addReview($user, $closedReviews)->denied());
+    }
+
+    public function test_ticket_policy_remaining_branches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $ticket = Ticket::create([
+            'user_id' => $owner->id,
+            'title' => 'T',
+            'message' => 'M',
+            'priority' => 'low',
+        ]);
+        $policy = new TicketPolicy;
+
+        $this->actingAs($owner);
+        $this->assertTrue($policy->create($owner));
+        $this->assertTrue($policy->view($owner, $ticket));
+        $this->assertFalse($policy->view($other, $ticket));
+        $this->assertTrue($policy->update($owner, $ticket));
+        $this->assertFalse($policy->update($other, $ticket));
+        $this->assertTrue($policy->delete($admin, $ticket));
+        $this->assertFalse($policy->delete($owner, $ticket));
     }
 }
