@@ -33,7 +33,11 @@ class CategoryPolicy
      */
     public function delete(User $user, Category $category): Response
     {
-        return $user->hasRole('admin') && $category->products->isEmpty()
+        $canDelete = $user->hasRole('admin')
+            && $category->products()->doesntExist()
+            && $category->children()->doesntExist();
+
+        return $canDelete
             ? Response::allow()
             : Response::deny('شما اجازه حذف این مدل را ندارید.');
     }

@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 
-class TagResource extends ApiResource
+class AttributeResource extends ApiResource
 {
     /**
      * @return array<string, mixed>
@@ -15,7 +15,7 @@ class TagResource extends ApiResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'url' => '/tags/'.$this->slug,
+            'created_at' => $this->when(isset($this->created_at), $this->created_at),
             'can_delete' => $this->canDelete($request),
         ];
     }

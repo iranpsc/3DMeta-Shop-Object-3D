@@ -39,6 +39,7 @@ class AdminReviewResource extends ApiResource
                 $this->relationLoaded('replies'),
                 fn () => AdminReviewReplyResource::collection($this->replies)->resolve()
             ),
+            'can_delete' => $this->canDelete($request),
         ];
     }
 }

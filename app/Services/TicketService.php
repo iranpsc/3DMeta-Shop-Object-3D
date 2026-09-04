@@ -35,7 +35,7 @@ class TicketService
             'title' => $data['title'],
             'message' => $data['message'],
             'priority' => $data['priority'],
-            'attachment' => $attachment?->store('attachments'),
+            'attachment' => $attachment?->store('attachments', 'public'),
         ]);
     }
 
@@ -61,7 +61,7 @@ class TicketService
 
         if ($attachment) {
             $ticket->update([
-                'attachment' => $attachment->store('attachments'),
+                'attachment' => $attachment->store('attachments', 'public'),
             ]);
         }
 
@@ -81,7 +81,7 @@ class TicketService
 
         $ticket->responses()->create([
             'message' => $message,
-            'attachment' => $attachment?->store('attachments'),
+            'attachment' => $attachment?->store('attachments', 'public'),
             'user_id' => $user->id,
         ]);
 

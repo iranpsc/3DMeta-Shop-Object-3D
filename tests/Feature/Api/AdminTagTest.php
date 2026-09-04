@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +20,8 @@ class AdminTagTest extends TestCase
         $this->actingAsAdminApiUser()
             ->getJson('/api/v1/admin/tags')
             ->assertOk()
-            ->assertJsonPath('data.data.0.name', 'Sample Tag');
+            ->assertJsonPath('data.data.0.name', 'Sample Tag')
+            ->assertJsonPath('data.data.0.can_delete', true);
     }
 
     public function test_admin_can_create_tag(): void
@@ -43,6 +46,21 @@ class AdminTagTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseMissing('tags', ['id' => $tag->id]);
+    }
+
+    public function test_admin_cannot_delete_tag_attached_to_product(): void
+    {
+        $tag = Tag::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => Category::factory()->create()->id,
+        ]);
+        $product->tags()->attach($tag);
+
+        $this->actingAsAdminApiUser()
+            ->deleteJson("/api/v1/admin/tags/{$tag->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('tags', ['id' => $tag->id]);
     }
 
     public function test_non_admin_cannot_manage_tags(): void

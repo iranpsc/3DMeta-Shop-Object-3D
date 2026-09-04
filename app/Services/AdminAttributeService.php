@@ -25,6 +25,8 @@ class AdminAttributeService
 
     public function delete(Attribute $attribute): void
     {
+        Gate::authorize('delete', $attribute);
+
         $attribute->delete();
     }
 }

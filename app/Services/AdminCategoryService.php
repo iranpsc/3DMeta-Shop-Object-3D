@@ -76,7 +76,6 @@ class AdminCategoryService
     {
         Gate::authorize('delete', $category);
 
-        $category->children()->delete();
         $category->delete();
     }
 }

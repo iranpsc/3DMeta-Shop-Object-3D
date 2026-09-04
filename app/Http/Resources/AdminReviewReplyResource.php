@@ -26,6 +26,7 @@ class AdminReviewReplyResource extends ApiResource
                     'avatar' => $this->user->avatar,
                 ]
             ),
+            'can_delete' => $this->canDelete($request),
         ];
     }
 }

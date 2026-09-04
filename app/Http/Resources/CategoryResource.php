@@ -43,6 +43,7 @@ class CategoryResource extends ApiResource
                         : null,
                 ])->values()
             ),
+            'can_delete' => $this->canDelete($request),
         ];
     }
 }

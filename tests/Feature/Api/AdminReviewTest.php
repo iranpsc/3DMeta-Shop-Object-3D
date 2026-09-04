@@ -28,7 +28,8 @@ class AdminReviewTest extends TestCase
         $this->actingAsAdminApiUser()
             ->getJson('/api/v1/admin/reviews')
             ->assertOk()
-            ->assertJsonPath('data.data.0.comment', 'Great product');
+            ->assertJsonPath('data.data.0.comment', 'Great product')
+            ->assertJsonPath('data.data.0.can_delete', true);
     }
 
     public function test_admin_can_approve_review(): void
@@ -46,7 +47,8 @@ class AdminReviewTest extends TestCase
         $this->actingAsAdminApiUser($admin)
             ->postJson("/api/v1/admin/reviews/{$review->id}/approve")
             ->assertOk()
-            ->assertJsonPath('data.approved', true);
+            ->assertJsonPath('data.approved', true)
+            ->assertJsonPath('data.can_delete', false);
 
         $this->assertTrue($review->fresh()->approved);
     }
@@ -67,6 +69,26 @@ class AdminReviewTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseMissing('reviews', ['id' => $review->id]);
+    }
+
+    public function test_admin_cannot_delete_approved_review(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Approved comment',
+            'rating' => 5,
+        ]);
+        $review->approve($admin->name);
+
+        $this->actingAsAdminApiUser($admin)
+            ->deleteJson("/api/v1/admin/reviews/{$review->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('reviews', ['id' => $review->id]);
     }
 
     public function test_admin_can_manage_review_replies(): void
@@ -92,17 +114,50 @@ class AdminReviewTest extends TestCase
         $this->actingAsAdminApiUser($admin)
             ->getJson("/api/v1/admin/reviews/{$review->id}/replies")
             ->assertOk()
-            ->assertJsonPath('data.replies.0.comment', 'Admin reply');
-
-        $this->actingAsAdminApiUser($admin)
-            ->postJson("/api/v1/admin/review-replies/{$reply->id}/approve")
-            ->assertOk()
-            ->assertJsonPath('message', 'پاسخ با موفقیت تایید شد.');
+            ->assertJsonPath('data.replies.0.comment', 'Admin reply')
+            ->assertJsonPath('data.replies.0.can_delete', true);
 
         $this->actingAsAdminApiUser($admin)
             ->deleteJson("/api/v1/admin/review-replies/{$reply->id}")
             ->assertOk();
 
         $this->assertDatabaseMissing('review_replies', ['id' => $reply->id]);
+
+        $this->actingAsAdminApiUser($admin)
+            ->postJson("/api/v1/admin/reviews/{$review->id}/replies", [
+                'comment' => 'Second reply',
+            ])
+            ->assertOk();
+
+        $secondReply = ReviewReply::query()->latest('id')->first();
+
+        $this->actingAsAdminApiUser($admin)
+            ->postJson("/api/v1/admin/review-replies/{$secondReply->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('message', 'پاسخ با موفقیت تایید شد.');
+    }
+
+    public function test_admin_cannot_delete_approved_review_reply(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Question',
+            'rating' => 5,
+        ]);
+        $reply = $review->replies()->create([
+            'user_id' => $admin->id,
+            'comment' => 'Approved reply',
+        ]);
+        $reply->approve($admin->name);
+
+        $this->actingAsAdminApiUser($admin)
+            ->deleteJson("/api/v1/admin/review-replies/{$reply->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('review_replies', ['id' => $reply->id]);
     }
 }

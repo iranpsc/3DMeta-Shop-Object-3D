@@ -20,7 +20,8 @@ class AdminCategoryTest extends TestCase
         $this->actingAsAdminApiUser()
             ->getJson('/api/v1/admin/categories')
             ->assertOk()
-            ->assertJsonPath('data.data.0.name', 'Electronics');
+            ->assertJsonPath('data.data.0.name', 'Electronics')
+            ->assertJsonPath('data.data.0.can_delete', true);
     }
 
     public function test_admin_can_create_category(): void
@@ -103,17 +104,16 @@ class AdminCategoryTest extends TestCase
             ->assertJsonPath('data.name', 'Updated With Image');
     }
 
-    public function test_admin_can_delete_category_with_children(): void
+    public function test_admin_cannot_delete_category_with_children(): void
     {
         $parent = Category::factory()->create();
         Category::factory()->create(['parent_id' => $parent->id]);
 
         $this->actingAsAdminApiUser()
             ->deleteJson("/api/v1/admin/categories/{$parent->id}")
-            ->assertOk();
+            ->assertForbidden();
 
-        $this->assertDatabaseMissing('categories', ['id' => $parent->id]);
-        $this->assertDatabaseCount('categories', 0);
+        $this->assertDatabaseHas('categories', ['id' => $parent->id]);
     }
 
     public function test_admin_cannot_delete_category_with_products(): void

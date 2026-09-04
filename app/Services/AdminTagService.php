@@ -28,6 +28,8 @@ class AdminTagService
 
     public function delete(Tag $tag): void
     {
+        Gate::authorize('delete', $tag);
+
         $tag->delete();
     }
 }

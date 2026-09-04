@@ -28,6 +28,6 @@ class AttributePolicy
      */
     public function delete(User $user, Attribute $attribute): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') && $attribute->products()->doesntExist();
     }
 }

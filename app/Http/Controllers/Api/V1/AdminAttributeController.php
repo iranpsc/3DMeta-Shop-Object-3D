@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreAdminAttributeRequest;
 use App\Http\Resources\ApiResource;
+use App\Http\Resources\AttributeResource;
 use App\Models\Attribute;
 use App\Services\AdminAttributeService;
 use Illuminate\Http\JsonResponse;
@@ -20,12 +21,7 @@ class AdminAttributeController extends Controller
         $paginator = $this->attributes->paginate();
 
         return ApiResource::success([
-            'data' => $paginator->getCollection()->map(fn (Attribute $attr) => [
-                'id' => $attr->id,
-                'name' => $attr->name,
-                'slug' => $attr->slug,
-                'created_at' => $attr->created_at,
-            ])->values(),
+            'data' => AttributeResource::collection($paginator->getCollection())->resolve(),
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -39,12 +35,10 @@ class AdminAttributeController extends Controller
     {
         $attribute = $this->attributes->store($request->validated());
 
-        return ApiResource::success([
-            'id' => $attribute->id,
-            'name' => $attribute->name,
-            'slug' => $attribute->slug,
-            'created_at' => $attribute->created_at,
-        ], 'ویژگی جدید با موفقیت ایجاد شد.');
+        return ApiResource::success(
+            (new AttributeResource($attribute))->resolve(),
+            'ویژگی جدید با موفقیت ایجاد شد.'
+        );
     }
 
     public function destroy(Attribute $attribute): JsonResponse

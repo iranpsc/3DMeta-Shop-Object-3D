@@ -6,6 +6,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +36,8 @@ class AdminProductTest extends TestCase
         $this->actingAsAdminApiUser()
             ->getJson('/api/v1/admin/products')
             ->assertOk()
-            ->assertJsonPath('data.data.0.name', 'Admin Product');
+            ->assertJsonPath('data.data.0.name', 'Admin Product')
+            ->assertJsonPath('data.data.0.can_delete', true);
     }
 
     public function test_admin_can_fetch_product_form_data(): void
@@ -121,6 +123,20 @@ class AdminProductTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseMissing('products', ['id' => $product->id]);
+    }
+
+    public function test_admin_cannot_delete_purchased_product(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id]);
+        $buyer = User::factory()->create();
+        $buyer->products()->attach($product->id, ['quantity' => 1]);
+
+        $this->actingAsAdminApiUser()
+            ->deleteJson("/api/v1/admin/products/{$product->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('products', ['id' => $product->id]);
     }
 
     public function test_admin_product_validates_stock_quantity_rules_and_file_extension(): void

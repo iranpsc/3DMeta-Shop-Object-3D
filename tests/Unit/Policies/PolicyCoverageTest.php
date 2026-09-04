@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\ReviewReply;
 use App\Models\Tag;
 use App\Models\Ticket;
 use App\Models\User;
@@ -14,6 +15,8 @@ use App\Policies\AttributePolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\OrderPolicy;
 use App\Policies\ProductPolicy;
+use App\Policies\ReviewPolicy;
+use App\Policies\ReviewReplyPolicy;
 use App\Policies\TagPolicy;
 use App\Policies\TicketPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +55,10 @@ class PolicyCoverageTest extends TestCase
         $this->assertTrue($policy->update($admin, $attribute));
         $this->assertTrue($policy->delete($admin, $attribute));
         $this->assertFalse($policy->delete($user, $attribute));
+
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $product->attributes()->attach($attribute->id, ['value' => 'Large']);
+        $this->assertFalse($policy->delete($admin, $attribute->fresh()));
     }
 
     public function test_product_policy_review_admin_abilities(): void
@@ -97,6 +104,10 @@ class PolicyCoverageTest extends TestCase
         $this->assertTrue($policy->update($admin, $category)->allowed());
         $this->assertTrue($policy->update($user, $category)->denied());
         $this->assertTrue($policy->delete($admin, $category)->allowed());
+
+        $childParent = Category::factory()->create();
+        Category::factory()->create(['parent_id' => $childParent->id]);
+        $this->assertTrue($policy->delete($admin, $childParent->fresh())->denied());
 
         Product::factory()->create(['category_id' => $category->id]);
         $this->assertTrue($policy->delete($admin, $category->fresh())->denied());
@@ -149,6 +160,9 @@ class PolicyCoverageTest extends TestCase
         $this->assertFalse($policy->delete($user, $product));
         $this->assertFalse($policy->download($user, $product));
 
+        $user->products()->attach($product->id, ['quantity' => 1]);
+        $this->assertFalse($policy->delete($admin, $product->fresh()));
+
         $freeProduct = Product::factory()->create([
             'category_id' => $category->id,
             'price' => 0,
@@ -157,7 +171,6 @@ class PolicyCoverageTest extends TestCase
         $this->assertTrue($policy->download($user, $freeProduct));
         $this->assertTrue($policy->addReview($user, $freeProduct)->allowed());
 
-        $user->products()->attach($product->id, ['quantity' => 1]);
         $this->assertTrue($policy->addReview($user, $product)->allowed());
 
         Review::create([
@@ -197,5 +210,50 @@ class PolicyCoverageTest extends TestCase
         $this->assertFalse($policy->update($other, $ticket));
         $this->assertTrue($policy->delete($admin, $ticket));
         $this->assertFalse($policy->delete($owner, $ticket));
+    }
+
+    public function test_review_policy_delete_branches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Pending',
+            'rating' => 3,
+        ]);
+        $policy = new ReviewPolicy;
+
+        $this->assertTrue($policy->delete($admin, $review));
+        $this->assertFalse($policy->delete($user, $review));
+
+        $review->approve($admin->name);
+        $this->assertFalse($policy->delete($admin, $review->fresh()));
+    }
+
+    public function test_review_reply_policy_delete_branches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Pending',
+            'rating' => 3,
+        ]);
+        $reply = ReviewReply::create([
+            'review_id' => $review->id,
+            'user_id' => $admin->id,
+            'comment' => 'Reply',
+        ]);
+        $policy = new ReviewReplyPolicy;
+
+        $this->assertTrue($policy->delete($admin, $reply));
+        $this->assertFalse($policy->delete($user, $reply));
+
+        $reply->approve($admin->name);
+        $this->assertFalse($policy->delete($admin, $reply->fresh()));
     }
 }

@@ -20,6 +20,14 @@ class ReviewReply extends Model
         'approved_by',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'approved' => 'boolean',
+            'approved_at' => 'datetime',
+        ];
+    }
+
     /**
      * Get the review that owns the reply.
      *

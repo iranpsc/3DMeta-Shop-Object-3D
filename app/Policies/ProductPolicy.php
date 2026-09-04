@@ -18,9 +18,9 @@ class ProductPolicy
         return $user->hasRole('admin');
     }
 
-    public function delete(User $user, Product $product)
+    public function delete(User $user, Product $product): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') && ! $product->users()->exists();
     }
 
     public function import(User $user)

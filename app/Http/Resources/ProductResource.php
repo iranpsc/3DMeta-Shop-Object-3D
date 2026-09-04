@@ -87,6 +87,7 @@ class ProductResource extends ApiResource
                 $this->relationLoaded('similar_products'),
                 fn () => ProductResource::collection($this->similar_products)
             ),
+            'can_delete' => $this->canDelete($request),
         ];
     }
 }

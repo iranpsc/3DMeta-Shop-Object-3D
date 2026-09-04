@@ -48,6 +48,20 @@ class ApiResource extends JsonResource
     }
 
     /**
+     * Whether the current user may delete this resource, per its policy.
+     */
+    protected function canDelete(Request $request): bool
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('delete', $this->resource);
+    }
+
+    /**
      * Build a successful JSON envelope without a resource instance.
      */
     public static function success(mixed $data = null, ?string $message = null, int $status = 200): JsonResponse

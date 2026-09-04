@@ -6,6 +6,7 @@ use App\Models\Review;
 use App\Models\ReviewReply;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Gate;
 
 class AdminReviewService
 {
@@ -30,6 +31,8 @@ class AdminReviewService
 
     public function delete(Review $review): void
     {
+        Gate::authorize('delete', $review);
+
         $review->delete();
     }
 
@@ -53,6 +56,8 @@ class AdminReviewService
 
     public function deleteReply(ReviewReply $reply): void
     {
+        Gate::authorize('delete', $reply);
+
         $reply->delete();
     }
 }
