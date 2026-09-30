@@ -18,6 +18,14 @@ class CategoryResource extends ApiResource
             'description' => $this->when(isset($this->description), $this->description),
             'url' => '/categories/'.$this->url,
             'products_count' => $this->when(isset($this->products_count), (int) $this->products_count),
+            'children_with_products_count' => $this->when(
+                isset($this->children_with_products_count),
+                (int) $this->children_with_products_count
+            ),
+            'deletable' => $this->when(
+                isset($this->products_count) && isset($this->children_with_products_count),
+                fn () => (int) $this->products_count === 0 && (int) $this->children_with_products_count === 0
+            ),
             'image' => $this->when(
                 $this->relationLoaded('image') && $this->image,
                 fn () => new ImageResource($this->image)

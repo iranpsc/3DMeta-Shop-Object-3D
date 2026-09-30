@@ -42,7 +42,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
 
         Route::post('/products/{sku}/reviews', [ProductController::class, 'storeReview']);
+        Route::put('/reviews/{review}', [ProductController::class, 'updateReview']);
         Route::post('/reviews/{review}/replies', [ProductController::class, 'storeReviewReply']);
+        Route::put('/review-replies/{reply}', [ProductController::class, 'updateReviewReply']);
 
         Route::post('/checkout/payment', [CheckoutController::class, 'payment']);
         Route::post('/orders/{order}/pay', [CheckoutController::class, 'repay']);
@@ -69,6 +71,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/{ticket}', [TicketController::class, 'update']);
         Route::delete('/{ticket}', [TicketController::class, 'destroy']);
         Route::post('/{ticket}/responses', [TicketController::class, 'storeResponse']);
+        Route::get('/{ticket}/attachment', [TicketController::class, 'downloadAttachment'])
+            ->name('api.v1.tickets.attachment');
+        Route::get('/{ticket}/responses/{response}/attachment', [TicketController::class, 'downloadResponseAttachment'])
+            ->name('api.v1.tickets.responses.attachment');
     });
 
     Route::get('/cart', [CartController::class, 'show']);
@@ -119,10 +125,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('/attributes/{attribute}', [AdminAttributeController::class, 'destroy']);
 
         Route::get('/reviews', [AdminReviewController::class, 'index']);
+        Route::put('/reviews/{review}', [AdminReviewController::class, 'update']);
         Route::post('/reviews/{review}/approve', [AdminReviewController::class, 'approve']);
         Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy']);
         Route::get('/reviews/{review}/replies', [AdminReviewController::class, 'replies']);
         Route::post('/reviews/{review}/replies', [AdminReviewController::class, 'storeReply']);
+        Route::put('/review-replies/{reply}', [AdminReviewController::class, 'updateReply']);
         Route::post('/review-replies/{reply}/approve', [AdminReviewController::class, 'approveReply']);
         Route::delete('/review-replies/{reply}', [AdminReviewController::class, 'destroyReply']);
 

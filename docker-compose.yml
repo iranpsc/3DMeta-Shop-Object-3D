@@ -6,7 +6,6 @@ services:
       args:
         PHP_VERSION: "8.4"
         COMPOSER_VERSION: "2"
-        ARVAN_REGISTRY: docker.arvancloud.ir
     image: 3drgb-backend-api:local
     container_name: 3drgb-api
     restart: unless-stopped
@@ -26,12 +25,13 @@ services:
       DB_DATABASE: "${DB_DATABASE:-3drgb}"
       DB_USERNAME: "${DB_USERNAME:-3drgb}"
       DB_PASSWORD: "${DB_PASSWORD:-secret}"
+      CACHE_STORE: redis
       CACHE_DRIVER: redis
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
       REDIS_CLIENT: predis
       REDIS_HOST: redis
-      REDIS_PASSWORD: null
+      REDIS_PASSWORD: ""
       REDIS_PORT: 6379
       BROADCAST_DRIVER: log
       FILESYSTEM_DISK: local
@@ -62,9 +62,47 @@ services:
       start_period: 45s
     networks:
       - 3drgb
+      - dokploy-network
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /var/www/html/app
+        - action: sync
+          path: ./bootstrap
+          target: /var/www/html/bootstrap
+          ignore:
+            - cache/
+        - action: sync
+          path: ./config
+          target: /var/www/html/config
+        - action: sync
+          path: ./database
+          target: /var/www/html/database
+        - action: sync
+          path: ./lang
+          target: /var/www/html/lang
+        - action: sync
+          path: ./resources
+          target: /var/www/html/resources
+        - action: sync
+          path: ./routes
+          target: /var/www/html/routes
+        - action: sync
+          path: ./public
+          target: /var/www/html/public
+          ignore:
+            - sitemap/
+            - storage/
+        - action: rebuild
+          path: ./composer.json
+        - action: rebuild
+          path: ./composer.lock
+        - action: rebuild
+          path: ./Dockerfile
 
   mysql:
-    image: docker.arvancloud.ir/mysql:8.0
+    image: mysql:8.0
     container_name: 3drgb-mysql
     restart: unless-stopped
     environment:
@@ -86,7 +124,7 @@ services:
       - 3drgb
 
   redis:
-    image: docker.arvancloud.ir/redis:7.4-alpine
+    image: redis:7.4-alpine
     container_name: 3drgb-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -107,6 +145,8 @@ services:
 networks:
   3drgb:
     driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   mysql_data:

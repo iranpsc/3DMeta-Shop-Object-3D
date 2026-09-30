@@ -15,6 +15,13 @@ class TicketResponseResource extends ApiResource
             'id' => $this->id,
             'message' => $this->message,
             'attachment' => $this->attachment,
+            'attachment_name' => $this->attachment ? basename($this->attachment) : null,
+            'attachment_url' => $this->attachment
+                ? route('api.v1.tickets.responses.attachment', [
+                    'ticket' => $this->ticket_id,
+                    'response' => $this->id,
+                ])
+                : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,

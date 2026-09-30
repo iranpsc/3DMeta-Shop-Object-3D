@@ -22,7 +22,7 @@ class AdminProductService
 
     public function paginate(?string $search = null, int $perPage = 10): LengthAwarePaginator
     {
-        $query = Product::with('category')->latest();
+        $query = Product::with('category')->withCount('users')->latest();
 
         if ($search) {
             $query->where('name', 'like', "%{$search}%");

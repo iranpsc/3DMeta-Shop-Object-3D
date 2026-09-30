@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\ReviewReply;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -212,6 +213,56 @@ class ProductTest extends TestCase
             'user_id' => $user->id,
             'comment' => 'This is a reply comment',
         ]);
+    }
+
+    public function test_owner_update_returns_review_and_reply_to_pending(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'published' => true,
+            'created_by' => 'admin',
+            'sku' => 'REV-EDIT',
+        ]);
+
+        $review = Review::query()->create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Approved review text',
+            'rating' => 5,
+            'approved' => true,
+            'approved_by' => 'Admin',
+            'approved_at' => now(),
+        ]);
+
+        $reply = ReviewReply::query()->create([
+            'review_id' => $review->id,
+            'user_id' => $user->id,
+            'comment' => 'Approved reply text',
+            'approved' => true,
+            'approved_by' => 'Admin',
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->putJson("/api/v1/reviews/{$review->id}", [
+                'comment' => 'Edited review text',
+                'rating' => 3,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.comment', 'Edited review text');
+
+        $this->actingAs($user)
+            ->putJson("/api/v1/review-replies/{$reply->id}", [
+                'comment' => 'Edited reply text',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.approved', false);
+
+        $this->assertFalse((bool) $review->fresh()->approved);
+        $this->assertFalse((bool) $reply->fresh()->approved);
+        $this->assertSame('Edited review text', $review->fresh()->comment);
     }
 
     public function test_guest_product_show_hides_download_urls(): void

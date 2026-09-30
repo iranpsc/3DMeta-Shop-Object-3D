@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Models\Ticket;
+use App\Models\TicketResponse;
 use App\Models\User;
 use App\Notifications\TicketResponse as TicketResponseNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TicketService
 {
@@ -89,5 +92,35 @@ class TicketService
         $ticket->user->notify(new TicketResponseNotification($ticket));
 
         return $ticket->fresh(['responses.user:id,name,avatar', 'user:id,name,avatar,email']);
+    }
+
+    public function downloadAttachment(User $user, Ticket $ticket): StreamedResponse
+    {
+        Gate::authorize('view', $ticket);
+
+        return $this->streamPrivateAttachment($ticket->attachment);
+    }
+
+    public function downloadResponseAttachment(
+        User $user,
+        Ticket $ticket,
+        TicketResponse $response,
+    ): StreamedResponse {
+        Gate::authorize('view', $ticket);
+
+        if ($response->ticket_id !== $ticket->id) {
+            abort(404);
+        }
+
+        return $this->streamPrivateAttachment($response->attachment);
+    }
+
+    private function streamPrivateAttachment(?string $path): StreamedResponse
+    {
+        if (! $path || ! Storage::disk('local')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($path, basename($path));
     }
 }

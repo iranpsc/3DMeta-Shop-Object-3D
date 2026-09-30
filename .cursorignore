@@ -2,12 +2,6 @@
 vendor/
 composer.lock
 
-# Laravel environment files
-.env
-.env.*
-.env.*.local
-.env.local
-
 # Storage and cache
 storage/
 bootstrap/cache/

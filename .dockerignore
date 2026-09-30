@@ -55,6 +55,10 @@ test-results.xml
 /storage/debugbar/*
 !/storage/**/.gitignore
 
+# Host-generated Laravel manifests (may reference require-dev packages)
+/bootstrap/cache/*.php
+!/bootstrap/cache/.gitignore
+
 # Misc
 Homestead.json
 Homestead.yaml

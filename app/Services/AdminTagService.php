@@ -10,7 +10,7 @@ class AdminTagService
 {
     public function paginate(int $perPage = 10): LengthAwarePaginator
     {
-        return Tag::latest()->paginate($perPage);
+        return Tag::withCount('products')->latest()->paginate($perPage);
     }
 
     /**
@@ -28,6 +28,8 @@ class AdminTagService
 
     public function delete(Tag $tag): void
     {
+        Gate::authorize('delete', $tag);
+
         $tag->delete();
     }
 }

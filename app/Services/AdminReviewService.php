@@ -28,8 +28,28 @@ class AdminReviewService
         return $review->fresh(['product:id,name,sku', 'user:id,name', 'replies']);
     }
 
+    /**
+     * @param  array{comment: string, rating: int}  $data
+     */
+    public function update(Review $review, array $data): Review
+    {
+        $review->update([
+            'comment' => $data['comment'],
+            'rating' => $data['rating'],
+            'approved' => false,
+            'approved_at' => null,
+            'approved_by' => null,
+        ]);
+
+        return $review->fresh(['product:id,name,sku', 'user:id,name', 'replies']);
+    }
+
     public function delete(Review $review): void
     {
+        if ($review->approved || $review->replies()->where('approved', true)->exists()) {
+            abort(403, 'دیدگاه تایید شده قابل حذف نیست.');
+        }
+
         $review->delete();
     }
 
@@ -51,8 +71,27 @@ class AdminReviewService
         return $reply->fresh('user');
     }
 
+    /**
+     * @param  array{comment: string}  $data
+     */
+    public function updateReply(ReviewReply $reply, array $data): ReviewReply
+    {
+        $reply->update([
+            'comment' => $data['comment'],
+            'approved' => false,
+            'approved_at' => null,
+            'approved_by' => null,
+        ]);
+
+        return $reply->fresh('user');
+    }
+
     public function deleteReply(ReviewReply $reply): void
     {
+        if ($reply->approved) {
+            abort(403, 'پاسخ تایید شده قابل حذف نیست.');
+        }
+
         $reply->delete();
     }
 }

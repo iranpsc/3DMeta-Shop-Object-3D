@@ -9,9 +9,11 @@ use App\Http\Requests\Api\UpdateTicketRequest;
 use App\Http\Resources\ApiResource;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
+use App\Models\TicketResponse;
 use App\Services\TicketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TicketController extends Controller
 {
@@ -89,5 +91,18 @@ class TicketController extends Controller
         return ApiResource::success(
             (new TicketResource($ticket))->resolve()
         );
+    }
+
+    public function downloadAttachment(Request $request, Ticket $ticket): StreamedResponse
+    {
+        return $this->tickets->downloadAttachment($request->user(), $ticket);
+    }
+
+    public function downloadResponseAttachment(
+        Request $request,
+        Ticket $ticket,
+        TicketResponse $response,
+    ): StreamedResponse {
+        return $this->tickets->downloadResponseAttachment($request->user(), $ticket, $response);
     }
 }

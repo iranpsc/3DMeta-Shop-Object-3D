@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreAdminReviewReplyRequest;
+use App\Http\Requests\Api\UpdateAdminReviewReplyRequest;
+use App\Http\Requests\Api\UpdateAdminReviewRequest;
 use App\Http\Resources\AdminReviewReplyResource;
 use App\Http\Resources\AdminReviewResource;
 use App\Http\Resources\ApiResource;
@@ -44,6 +46,16 @@ class AdminReviewController extends Controller
         );
     }
 
+    public function update(UpdateAdminReviewRequest $request, Review $review): JsonResponse
+    {
+        $review = $this->reviews->update($review, $request->validated());
+
+        return ApiResource::success(
+            (new AdminReviewResource($review))->resolve(),
+            'دیدگاه ویرایش شد و در انتظار تایید مجدد است.'
+        );
+    }
+
     public function destroy(Review $review): JsonResponse
     {
         $this->reviews->delete($review);
@@ -81,6 +93,16 @@ class AdminReviewController extends Controller
         return ApiResource::success(
             (new AdminReviewReplyResource($reply))->resolve(),
             'پاسخ با موفقیت تایید شد.'
+        );
+    }
+
+    public function updateReply(UpdateAdminReviewReplyRequest $request, ReviewReply $reply): JsonResponse
+    {
+        $reply = $this->reviews->updateReply($reply, $request->validated());
+
+        return ApiResource::success(
+            (new AdminReviewReplyResource($reply))->resolve(),
+            'پاسخ ویرایش شد و در انتظار تایید مجدد است.'
         );
     }
 

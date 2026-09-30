@@ -69,6 +69,55 @@ class AdminReviewTest extends TestCase
         $this->assertDatabaseMissing('reviews', ['id' => $review->id]);
     }
 
+    public function test_admin_cannot_delete_approved_review(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Approved comment',
+            'rating' => 5,
+            'approved' => true,
+        ]);
+
+        $this->actingAsAdminApiUser($admin)
+            ->deleteJson("/api/v1/admin/reviews/{$review->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('reviews', ['id' => $review->id]);
+    }
+
+    public function test_admin_update_returns_review_to_pending(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Approved comment',
+            'rating' => 5,
+            'approved' => true,
+            'approved_by' => $admin->name,
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAsAdminApiUser($admin)
+            ->putJson("/api/v1/admin/reviews/{$review->id}", [
+                'comment' => 'Edited comment',
+                'rating' => 4,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.approved', false)
+            ->assertJsonPath('data.comment', 'Edited comment');
+
+        $review->refresh();
+        $this->assertFalse((bool) $review->approved);
+        $this->assertNull($review->approved_by);
+    }
+
     public function test_admin_can_manage_review_replies(): void
     {
         $admin = User::factory()->admin()->create();
@@ -99,10 +148,51 @@ class AdminReviewTest extends TestCase
             ->assertOk()
             ->assertJsonPath('message', 'پاسخ با موفقیت تایید شد.');
 
+        $pending = $review->replies()->create([
+            'user_id' => $admin->id,
+            'comment' => 'Pending reply',
+        ]);
+
         $this->actingAsAdminApiUser($admin)
-            ->deleteJson("/api/v1/admin/review-replies/{$reply->id}")
+            ->deleteJson("/api/v1/admin/review-replies/{$pending->id}")
             ->assertOk();
 
-        $this->assertDatabaseMissing('review_replies', ['id' => $reply->id]);
+        $this->assertDatabaseMissing('review_replies', ['id' => $pending->id]);
+        $this->assertDatabaseHas('review_replies', ['id' => $reply->id]);
+    }
+
+    public function test_admin_cannot_delete_approved_reply_and_update_returns_it_to_pending(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $review = Review::create([
+            'product_id' => $product->id,
+            'user_id' => $user->id,
+            'comment' => 'Question',
+            'rating' => 5,
+        ]);
+        $reply = $review->replies()->create([
+            'user_id' => $user->id,
+            'comment' => 'Approved reply',
+            'approved' => true,
+            'approved_by' => $admin->name,
+            'approved_at' => now(),
+        ]);
+
+        $this->actingAsAdminApiUser($admin)
+            ->deleteJson("/api/v1/admin/review-replies/{$reply->id}")
+            ->assertForbidden();
+
+        $this->actingAsAdminApiUser($admin)
+            ->putJson("/api/v1/admin/review-replies/{$reply->id}", [
+                'comment' => 'Edited reply',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.approved', false)
+            ->assertJsonPath('data.comment', 'Edited reply');
+
+        $this->assertFalse((bool) $reply->fresh()->approved);
+        $this->assertDatabaseHas('review_replies', ['id' => $reply->id]);
     }
 }

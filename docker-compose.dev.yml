@@ -1,0 +1,35 @@
+# Local development overlay (watch + published ports).
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch --build
+#
+# Or set in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml
+# then:
+#   docker compose up --watch --build
+
+services:
+  app:
+    ports:
+      - "${HOST_PORT:-8000}:80"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      CACHE_CONFIG: "false"
+      LOG_LEVEL: debug
+    volumes:
+      - ${DATA_STORAGE_PATH:-./storage/app}:/var/www/html/storage/app
+      - ${DATA_SITEMAP_PATH:-./public/sitemap}:/var/www/html/public/sitemap
+    networks:
+      - 3drgb
+      - dokploy-network
+
+  mysql:
+    ports:
+      - "${DB_HOST_PORT:-3306}:3306"
+
+networks:
+  # Create a local network instead of requiring Dokploy's external one.
+  dokploy-network:
+    name: dokploy-network
+    external: false

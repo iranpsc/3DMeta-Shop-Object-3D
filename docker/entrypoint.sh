@@ -63,18 +63,36 @@ if [ "${SKIP_DB_WAIT:-false}" != "true" ] && [ -n "${DB_HOST:-}" ]; then
   done
 fi
 
-# Cache config/routes/views in production
+# Discover packages (vendor was installed with --no-scripts in the image build).
+# Required so deferred providers like CacheServiceProvider are mapped; Redis
+# sessions resolve the "cache" binding and otherwise throw ReflectionException.
+# Clear host/dev manifests first — they may reference require-dev providers.
+echo "[entrypoint] Discovering packages..."
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php || true
+php artisan package:discover --ansi --no-interaction || true
+
+# Cache or clear compiled config/routes/views
 if [ "${APP_ENV:-production}" = "production" ] || [ "${CACHE_CONFIG:-true}" = "true" ]; then
   echo "[entrypoint] Caching config/routes/views..."
   php artisan config:cache || true
   php artisan route:cache || true
   php artisan view:cache || true
+else
+  echo "[entrypoint] Clearing compiled config/routes (local/dev)..."
+  php artisan config:clear || true
+  php artisan route:clear || true
+  rm -f bootstrap/cache/config.php bootstrap/cache/routes-*.php bootstrap/cache/events.php || true
 fi
+
+# Artisan above often runs as root — ensure PHP-FPM (www-data) can refresh manifests.
+chown -R www-data:www-data bootstrap/cache storage/framework storage/logs || true
+chmod -R ug+rwx bootstrap/cache storage/framework storage/logs || true
 
 # Optional migrate on boot (Dokploy / compose)
 if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
   echo "[entrypoint] Running migrations..."
   php artisan migrate --force --no-interaction || true
+  chown -R www-data:www-data bootstrap/cache storage/framework storage/logs || true
 fi
 
 # Storage symlink for public disk

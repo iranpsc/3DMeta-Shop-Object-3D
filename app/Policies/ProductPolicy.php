@@ -18,9 +18,17 @@ class ProductPolicy
         return $user->hasRole('admin');
     }
 
-    public function delete(User $user, Product $product)
+    public function delete(User $user, Product $product): Response
     {
-        return $user->hasRole('admin');
+        if (! $user->hasRole('admin')) {
+            return Response::deny('شما اجازه حذف این محصول را ندارید.');
+        }
+
+        if ($product->users()->exists()) {
+            return Response::deny('محصول فروخته شده قابل حذف نیست.');
+        }
+
+        return Response::allow();
     }
 
     public function import(User $user)

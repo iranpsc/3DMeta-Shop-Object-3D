@@ -124,5 +124,29 @@ class AdminCategoryTest extends TestCase
         $this->actingAsAdminApiUser()
             ->deleteJson("/api/v1/admin/categories/{$category->id}")
             ->assertForbidden();
+
+        $this->assertDatabaseHas('categories', ['id' => $category->id]);
+    }
+
+    public function test_admin_cannot_delete_category_when_child_contains_products(): void
+    {
+        $parent = Category::factory()->create();
+        $child = Category::factory()->create(['parent_id' => $parent->id]);
+        Product::factory()->create(['category_id' => $child->id]);
+
+        $response = $this->actingAsAdminApiUser()
+            ->getJson('/api/v1/admin/categories')
+            ->assertOk();
+
+        $listed = collect($response->json('data.data'))->keyBy('id');
+        $this->assertFalse($listed[$parent->id]['deletable']);
+        $this->assertFalse($listed[$child->id]['deletable']);
+
+        $this->actingAsAdminApiUser()
+            ->deleteJson("/api/v1/admin/categories/{$parent->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('categories', ['id' => $parent->id]);
+        $this->assertDatabaseHas('categories', ['id' => $child->id]);
     }
 }

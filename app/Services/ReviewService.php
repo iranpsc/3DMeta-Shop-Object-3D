@@ -70,4 +70,47 @@ class ReviewService
             'comment' => $data['comment'],
         ]);
     }
+
+    /**
+     * Update a review and return it to pending approval.
+     *
+     * @param  array{comment: string, rating: int}  $data
+     */
+    public function update(User $user, Review $review, array $data): Review
+    {
+        if ($review->user_id !== $user->id) {
+            abort(403, 'شما اجازه ویرایش این دیدگاه را ندارید.');
+        }
+
+        $review->update([
+            'comment' => $data['comment'],
+            'rating' => $data['rating'],
+            'approved' => false,
+            'approved_at' => null,
+            'approved_by' => null,
+        ]);
+
+        return $review->fresh(['user', 'replies.user']);
+    }
+
+    /**
+     * Update a reply and return it to pending approval.
+     *
+     * @param  array{comment: string}  $data
+     */
+    public function updateReply(User $user, ReviewReply $reply, array $data): ReviewReply
+    {
+        if ($reply->user_id !== $user->id) {
+            abort(403, 'شما اجازه ویرایش این پاسخ را ندارید.');
+        }
+
+        $reply->update([
+            'comment' => $data['comment'],
+            'approved' => false,
+            'approved_at' => null,
+            'approved_by' => null,
+        ]);
+
+        return $reply->fresh('user');
+    }
 }

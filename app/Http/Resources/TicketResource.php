@@ -39,6 +39,9 @@ class TicketResource extends ApiResource
             },
             'attachment' => $this->attachment,
             'attachment_name' => $this->attachment ? basename($this->attachment) : null,
+            'attachment_url' => $this->attachment
+                ? route('api.v1.tickets.attachment', ['ticket' => $this->id])
+                : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'user' => $this->whenLoaded('user', fn () => [

@@ -145,8 +145,8 @@ class PolicyCoverageTest extends TestCase
         $this->assertFalse($policy->create($user));
         $this->assertTrue($policy->update($admin, $product));
         $this->assertFalse($policy->update($user, $product));
-        $this->assertTrue($policy->delete($admin, $product));
-        $this->assertFalse($policy->delete($user, $product));
+        $this->assertTrue($policy->delete($admin, $product)->allowed());
+        $this->assertTrue($policy->delete($user, $product)->denied());
         $this->assertFalse($policy->download($user, $product));
 
         $freeProduct = Product::factory()->create([
@@ -158,6 +158,7 @@ class PolicyCoverageTest extends TestCase
         $this->assertTrue($policy->addReview($user, $freeProduct)->allowed());
 
         $user->products()->attach($product->id, ['quantity' => 1]);
+        $this->assertTrue($policy->delete($admin, $product->fresh())->denied());
         $this->assertTrue($policy->addReview($user, $product)->allowed());
 
         Review::create([

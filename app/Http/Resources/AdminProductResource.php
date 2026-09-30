@@ -20,6 +20,9 @@ class AdminProductResource extends ApiResource
             'delivery_time' => $this->delivery_time,
             'created_at' => $this->created_at,
             'category_id' => $this->category_id,
+            'sold' => array_key_exists('users_count', $this->resource->getAttributes())
+                ? (int) $this->users_count > 0
+                : $this->resource->users()->exists(),
         ]);
     }
 
