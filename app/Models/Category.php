@@ -105,7 +105,12 @@ class Category extends Model implements Sitemapable
      */
     public function toSitemapTag(): Url|string|array
     {
-        $url = Url::create(url('categories/'.$this->url))
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+        $targetUrl = $frontendUrl
+            ? "{$frontendUrl}/categories/{$this->url}"
+            : url('categories/'.$this->url);
+
+        $url = Url::create($targetUrl)
             ->setLastModificationDate($this->updated_at)
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY)
             ->setPriority(0.8);
