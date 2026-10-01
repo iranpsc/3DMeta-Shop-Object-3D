@@ -13,7 +13,7 @@ class AdminProductResource extends ApiResource
      */
     public function toArray($request): array
     {
-        return array_merge((new ProductResource($this->resource))->resolve(), [
+        $data = array_merge((new ProductResource($this->resource))->resolve(), [
             'published' => (bool) $this->published,
             'meta_description' => $this->meta_description,
             'meta_keywords' => $this->meta_keywords,
@@ -24,6 +24,26 @@ class AdminProductResource extends ApiResource
                 ? (int) $this->users_count > 0
                 : $this->resource->users()->exists(),
         ]);
+
+        if ($this->relationLoaded('images')) {
+            $data['images'] = $this->images->map(fn ($image) => [
+                'id' => $image->id,
+                'path' => $image->path,
+                'url' => $image->url,
+            ])->values()->all();
+        }
+
+        if ($this->relationLoaded('files')) {
+            $data['files'] = $this->files->map(fn ($file) => [
+                'id' => $file->id,
+                'name' => $file->name ?? null,
+                'extension' => $file->extension ?? null,
+                'size' => $file->size ?? null,
+                'url' => $file->url,
+            ])->values()->all();
+        }
+
+        return $data;
     }
 
     /**

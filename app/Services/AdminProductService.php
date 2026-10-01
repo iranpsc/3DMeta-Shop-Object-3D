@@ -13,6 +13,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Morilog\Jalali\Jalalian;
 
@@ -160,6 +161,10 @@ class AdminProductService
 
         if ($image->imageable_id !== $product->id || $image->imageable_type !== Product::class) {
             abort(403);
+        }
+
+        if (is_string($image->path) && $image->path !== '' && ! str_contains($image->path, '..')) {
+            Storage::disk('public')->delete($image->path);
         }
 
         $image->delete();
