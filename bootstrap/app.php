@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\Admin;
 use App\Http\Middleware\AuthenticateWithOnceBasic;
+use App\Http\Middleware\StartSessionForTicketAttachments;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -25,11 +26,20 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_AWS_ELB,
         );
 
-        $middleware->redirectGuestsTo(fn () => route('login'));
+        // API routes have no named login page. Browser navigations (Accept: text/html)
+        // must get 401 instead of generating route('login').
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return null;
+            }
+
+            return '/auth/redirect';
+        });
         $middleware->redirectUsersTo('/dashboard');
 
         // Sanctum SPA cookie auth for Next.js (cross-subdomain / localhost)
         $middleware->statefulApi();
+        $middleware->prependToGroup('api', StartSessionForTicketAttachments::class);
 
         $middleware->preventRequestForgery(except: [
             '/callback',
