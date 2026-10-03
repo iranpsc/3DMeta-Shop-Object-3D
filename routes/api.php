@@ -122,6 +122,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/attributes', [AdminAttributeController::class, 'index']);
         Route::post('/attributes', [AdminAttributeController::class, 'store']);
+        Route::put('/attributes/{attribute}', [AdminAttributeController::class, 'update']);
         Route::delete('/attributes/{attribute}', [AdminAttributeController::class, 'destroy']);
 
         Route::get('/reviews', [AdminReviewController::class, 'index']);

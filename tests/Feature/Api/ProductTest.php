@@ -65,12 +65,14 @@ class ProductTest extends TestCase
             'name' => 'Detail Product',
             'short_description' => 'Short text',
             'long_description' => 'Long text',
+            'meta_description' => 'Meta description text',
         ]);
 
         $this->getJson('/api/v1/products/SHOW-123')
             ->assertOk()
             ->assertJsonPath('data.sku', 'SHOW-123')
             ->assertJsonPath('data.name', 'Detail Product')
+            ->assertJsonPath('data.meta_description', 'Meta description text')
             ->assertJsonStructure([
                 'data' => [
                     'id',
@@ -78,6 +80,7 @@ class ProductTest extends TestCase
                     'name',
                     'short_description',
                     'long_description',
+                    'meta_description',
                     'price',
                     'final_price',
                     'is_free',
