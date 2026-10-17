@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreReviewReplyRequest;
 use App\Http\Requests\Api\StoreReviewRequest;
+use App\Http\Requests\Api\UpdateReviewReplyRequest;
+use App\Http\Requests\Api\UpdateReviewRequest;
 use App\Http\Resources\ApiResource;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
@@ -12,6 +14,7 @@ use App\Http\Resources\ReviewResource;
 use App\Http\Resources\TagResource;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\ReviewReply;
 use App\Models\Tag;
 use App\Services\CategoryService;
 use App\Services\ProductService;
@@ -96,6 +99,16 @@ class ProductController extends Controller
         );
     }
 
+    public function updateReview(UpdateReviewRequest $request, Review $review): JsonResponse
+    {
+        $review = $this->reviews->update($request->user(), $review, $request->validated());
+
+        return ApiResource::success(
+            (new ReviewResource($review))->resolve(),
+            'نظر شما ویرایش شد و پس از تایید مجدد نمایش داده خواهد شد.'
+        );
+    }
+
     public function storeReviewReply(StoreReviewReplyRequest $request, Review $review): JsonResponse
     {
         $reply = $this->reviews->storeReply($request->user(), $review, $request->validated());
@@ -108,6 +121,21 @@ class ProductController extends Controller
             ],
             'پاسخ شما با موفقیت ثبت شد و پس از تایید نمایش داده خواهد شد.',
             201
+        );
+    }
+
+    public function updateReviewReply(UpdateReviewReplyRequest $request, ReviewReply $reply): JsonResponse
+    {
+        $reply = $this->reviews->updateReply($request->user(), $reply, $request->validated());
+
+        return ApiResource::success(
+            [
+                'id' => $reply->id,
+                'comment' => $reply->comment,
+                'review_id' => $reply->review_id,
+                'approved' => (bool) $reply->approved,
+            ],
+            'پاسخ شما ویرایش شد و پس از تایید مجدد نمایش داده خواهد شد.'
         );
     }
 

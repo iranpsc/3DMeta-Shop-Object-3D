@@ -3,11 +3,14 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Ticket;
+use App\Models\TicketResponse;
 use App\Models\User;
-use App\Notifications\TicketResponse;
+use App\Notifications\TicketResponse as TicketResponseNotification;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TicketTest extends TestCase
@@ -111,7 +114,7 @@ class TicketTest extends TestCase
 
         Notification::assertSentTo(
             $user,
-            TicketResponse::class
+            TicketResponseNotification::class
         );
     }
 
@@ -134,9 +137,10 @@ class TicketTest extends TestCase
 
     public function test_user_can_create_ticket_with_attachment(): void
     {
+        Storage::fake('local');
         $user = User::factory()->create();
 
-        $this->actingAsVerifiedApiUser($user)
+        $response = $this->actingAsVerifiedApiUser($user)
             ->post('/api/v1/tickets', [
                 'title' => 'With attachment',
                 'message' => 'Ticket body text',
@@ -147,10 +151,16 @@ class TicketTest extends TestCase
 
         $ticket = Ticket::where('title', 'With attachment')->first();
         $this->assertNotNull($ticket->attachment);
+        Storage::disk('local')->assertExists($ticket->attachment);
+        $response->assertJsonPath(
+            'data.attachment_url',
+            route('api.v1.tickets.attachment', ['ticket' => $ticket->id])
+        );
     }
 
     public function test_user_can_update_ticket_with_attachment(): void
     {
+        Storage::fake('local');
         $user = User::factory()->create();
         $ticket = Ticket::create([
             'user_id' => $user->id,
@@ -170,6 +180,165 @@ class TicketTest extends TestCase
             ->assertOk();
 
         $this->assertNotNull($ticket->fresh()->attachment);
+        Storage::disk('local')->assertExists($ticket->fresh()->attachment);
+    }
+
+    public function test_owner_can_download_ticket_attachment(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $path = UploadedFile::fake()
+            ->create('report.pdf', 100, 'application/pdf')
+            ->store('attachments');
+
+        $ticket = Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'Download me',
+            'message' => 'Body',
+            'priority' => 'low',
+            'attachment' => $path,
+        ]);
+
+        $this->actingAsVerifiedApiUser($user)
+            ->get("/api/v1/tickets/{$ticket->id}/attachment")
+            ->assertOk();
+    }
+
+    public function test_guest_cannot_download_ticket_attachment(): void
+    {
+        Storage::fake('local');
+        $path = UploadedFile::fake()
+            ->create('report.pdf', 100, 'application/pdf')
+            ->store('attachments');
+
+        $ticket = Ticket::create([
+            'user_id' => User::factory()->create()->id,
+            'title' => 'Private file',
+            'message' => 'Body',
+            'priority' => 'low',
+            'attachment' => $path,
+        ]);
+
+        $this->getJson("/api/v1/tickets/{$ticket->id}/attachment")
+            ->assertUnauthorized();
+    }
+
+    public function test_browser_navigation_to_ticket_attachment_does_not_use_missing_login_route(): void
+    {
+        $this->get('/api/v1/tickets/1/attachment')
+            ->assertUnauthorized();
+    }
+
+    public function test_owner_can_open_ticket_attachment_without_spa_referer(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $path = UploadedFile::fake()
+            ->create('report.pdf', 100, 'application/pdf')
+            ->store('attachments');
+
+        $ticket = Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'Open in tab',
+            'message' => 'Body',
+            'priority' => 'low',
+            'attachment' => $path,
+        ]);
+
+        $this->withWebSession($user)
+            ->get("/api/v1/tickets/{$ticket->id}/attachment")
+            ->assertOk();
+    }
+
+    public function test_owner_can_open_response_attachment_without_spa_referer(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $path = UploadedFile::fake()
+            ->create('reply.pdf', 100, 'application/pdf')
+            ->store('attachments');
+
+        $ticket = Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'Open reply file',
+            'message' => 'Body',
+            'priority' => 'low',
+        ]);
+
+        $response = TicketResponse::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'message' => 'Reply with file',
+            'attachment' => $path,
+        ]);
+
+        $this->withWebSession($user)
+            ->get("/api/v1/tickets/{$ticket->id}/responses/{$response->id}/attachment")
+            ->assertOk();
+    }
+
+    public function test_other_user_cannot_download_ticket_attachment(): void
+    {
+        Storage::fake('local');
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $path = UploadedFile::fake()
+            ->create('report.pdf', 100, 'application/pdf')
+            ->store('attachments');
+
+        $ticket = Ticket::create([
+            'user_id' => $owner->id,
+            'title' => 'Private file',
+            'message' => 'Body',
+            'priority' => 'low',
+            'attachment' => $path,
+        ]);
+
+        $this->actingAsVerifiedApiUser($other)
+            ->getJson("/api/v1/tickets/{$ticket->id}/attachment")
+            ->assertForbidden();
+    }
+
+    public function test_download_missing_ticket_attachment_returns_404(): void
+    {
+        $user = User::factory()->create();
+        $ticket = Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'No file',
+            'message' => 'Body',
+            'priority' => 'low',
+        ]);
+
+        $this->actingAsVerifiedApiUser($user)
+            ->getJson("/api/v1/tickets/{$ticket->id}/attachment")
+            ->assertNotFound();
+    }
+
+    public function test_owner_can_download_response_attachment(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $path = UploadedFile::fake()
+            ->create('reply.pdf', 100, 'application/pdf')
+            ->store('attachments');
+
+        $ticket = Ticket::create([
+            'user_id' => $user->id,
+            'title' => 'With reply file',
+            'message' => 'Body',
+            'priority' => 'low',
+        ]);
+
+        $response = TicketResponse::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'message' => 'Reply with file',
+            'attachment' => $path,
+        ]);
+
+        $this->actingAsVerifiedApiUser($user)
+            ->get("/api/v1/tickets/{$ticket->id}/responses/{$response->id}/attachment")
+            ->assertOk();
     }
 
     public function test_admin_can_delete_ticket(): void
@@ -202,5 +371,22 @@ class TicketTest extends TestCase
         $this->actingAsVerifiedApiUser($user)
             ->deleteJson("/api/v1/tickets/{$ticket->id}")
             ->assertForbidden();
+    }
+
+    private function withWebSession(User $user): self
+    {
+        $session = $this->app['session'];
+
+        if (! $session->isStarted()) {
+            $session->start();
+        }
+
+        $session->put(
+            'login_web_'.sha1(SessionGuard::class),
+            $user->getAuthIdentifier()
+        );
+        $session->save();
+
+        return $this->withCookie((string) config('session.cookie'), $session->getId());
     }
 }

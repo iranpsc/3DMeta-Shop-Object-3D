@@ -6,6 +6,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -123,6 +124,25 @@ class AdminProductTest extends TestCase
         $this->assertDatabaseMissing('products', ['id' => $product->id]);
     }
 
+    public function test_admin_cannot_delete_sold_product(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id]);
+        $buyer = User::factory()->create();
+        $buyer->products()->attach($product->id, ['quantity' => 1]);
+
+        $this->actingAsAdminApiUser()
+            ->getJson('/api/v1/admin/products')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.sold', true);
+
+        $this->actingAsAdminApiUser()
+            ->deleteJson("/api/v1/admin/products/{$product->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('products', ['id' => $product->id]);
+    }
+
     public function test_admin_product_validates_stock_quantity_rules_and_file_extension(): void
     {
         Storage::fake('public');
@@ -220,6 +240,40 @@ class AdminProductTest extends TestCase
             ->getJson("/api/v1/admin/products/{$product->id}")
             ->assertOk()
             ->assertJsonPath('data.name', 'Detail Product');
+    }
+
+    public function test_admin_product_show_includes_image_and_file_view_urls(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 250000,
+            'sale_price' => 200000,
+        ]);
+        $product->images()->create(['path' => 'products/view-me.jpg']);
+        $product->files()->create([
+            'name' => 'view-me.glb',
+            'path' => 'download/view-me.glb',
+            'type' => 'model/gltf-binary',
+            'size' => '1 KB',
+        ]);
+
+        $response = $this->actingAsAdminApiUser()
+            ->getJson("/api/v1/admin/products/{$product->id}")
+            ->assertOk()
+            ->assertJsonPath('data.images.0.path', 'products/view-me.jpg')
+            ->assertJsonPath('data.files.0.name', 'view-me.glb')
+            ->assertJsonPath('data.files.0.size', '1 KB');
+
+        $imageUrl = $response->json('data.images.0.url');
+        $this->assertIsString($imageUrl);
+        $this->assertStringContainsString('storage/products/view-me.jpg', $imageUrl);
+
+        $fileUrl = $response->json('data.files.0.url');
+        $this->assertIsString($fileUrl);
+        $this->assertNotSame('', $fileUrl);
+        $this->assertStringContainsString('/download/', $fileUrl);
+        $this->assertStringContainsString('signature=', $fileUrl);
     }
 
     public function test_form_data_increments_next_sku_from_existing(): void
@@ -345,33 +399,60 @@ class AdminProductTest extends TestCase
 
     public function test_admin_can_destroy_product_image_and_file(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('products/remove-me.jpg', 'image-bytes');
+        Storage::disk('public')->put('products/keep-me.jpg', 'keep-bytes');
+
         $category = Category::factory()->create();
         $product = Product::factory()->create(['category_id' => $category->id]);
         $image = $product->images()->create(['path' => 'products/remove-me.jpg']);
+        $keptImage = $product->images()->create(['path' => 'products/keep-me.jpg']);
 
         $fileDir = storage_path('app/download/test');
         if (! is_dir($fileDir)) {
             mkdir($fileDir, 0777, true);
         }
         file_put_contents($fileDir.'/remove-me.glb', 'content');
+        file_put_contents($fileDir.'/keep-me.glb', 'keep');
         $file = $product->files()->create([
             'name' => 'remove-me.glb',
             'path' => 'download/test/remove-me.glb',
             'type' => 'model/gltf-binary',
             'size' => '1 KB',
         ]);
+        $keptFile = $product->files()->create([
+            'name' => 'keep-me.glb',
+            'path' => 'download/test/keep-me.glb',
+            'type' => 'model/gltf-binary',
+            'size' => '1 KB',
+        ]);
 
-        $this->actingAsAdminApiUser()
+        $imageResponse = $this->actingAsAdminApiUser()
             ->deleteJson("/api/v1/admin/products/{$product->id}/images/{$image->id}")
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonPath('data.images.0.id', $keptImage->id);
+
+        $keptImageUrl = $imageResponse->json('data.images.0.url');
+        $this->assertIsString($keptImageUrl);
+        $this->assertStringContainsString('storage/products/keep-me.jpg', $keptImageUrl);
 
         $this->assertDatabaseMissing('images', ['id' => $image->id]);
+        Storage::disk('public')->assertMissing('products/remove-me.jpg');
+        Storage::disk('public')->assertExists('products/keep-me.jpg');
 
-        $this->actingAsAdminApiUser()
+        $fileResponse = $this->actingAsAdminApiUser()
             ->deleteJson("/api/v1/admin/products/{$product->id}/files/{$file->id}")
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonPath('data.files.0.id', $keptFile->id);
+
+        $keptFileUrl = $fileResponse->json('data.files.0.url');
+        $this->assertIsString($keptFileUrl);
+        $this->assertStringContainsString('/download/', $keptFileUrl);
+        $this->assertStringContainsString('signature=', $keptFileUrl);
 
         $this->assertDatabaseMissing('files', ['id' => $file->id]);
+        $this->assertFileDoesNotExist($fileDir.'/remove-me.glb');
+        $this->assertFileExists($fileDir.'/keep-me.glb');
     }
 
     public function test_admin_cannot_destroy_image_or_file_from_another_product(): void

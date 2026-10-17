@@ -29,8 +29,12 @@ class TagPolicy
      */
     public function delete(User $user, Tag $tag): Response
     {
-        return $user->hasRole('admin') && $tag->products->isEmpty()
-            ? Response::allow()
-            : Response::deny('شما اجازه حذف این برچسب را ندارید.');
+        if (! $user->hasRole('admin')) {
+            return Response::deny('شما اجازه حذف این برچسب را ندارید.');
+        }
+
+        return $tag->products()->exists()
+            ? Response::deny('برچسب متصل به محصول قابل حذف نیست.')
+            : Response::allow();
     }
 }

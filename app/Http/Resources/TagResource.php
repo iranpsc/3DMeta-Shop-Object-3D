@@ -16,6 +16,7 @@ class TagResource extends ApiResource
             'name' => $this->name,
             'slug' => $this->slug,
             'url' => '/tags/'.$this->slug,
+            'products_count' => $this->when(isset($this->products_count), (int) $this->products_count),
         ];
     }
 }

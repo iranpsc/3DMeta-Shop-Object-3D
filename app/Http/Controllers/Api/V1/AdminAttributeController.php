@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreAdminAttributeRequest;
+use App\Http\Requests\Api\UpdateAdminAttributeRequest;
 use App\Http\Resources\ApiResource;
 use App\Models\Attribute;
 use App\Services\AdminAttributeService;
@@ -45,6 +46,18 @@ class AdminAttributeController extends Controller
             'slug' => $attribute->slug,
             'created_at' => $attribute->created_at,
         ], 'ویژگی جدید با موفقیت ایجاد شد.');
+    }
+
+    public function update(UpdateAdminAttributeRequest $request, Attribute $attribute): JsonResponse
+    {
+        $attribute = $this->attributes->update($attribute, $request->validated());
+
+        return ApiResource::success([
+            'id' => $attribute->id,
+            'name' => $attribute->name,
+            'slug' => $attribute->slug,
+            'created_at' => $attribute->created_at,
+        ], 'ویژگی با موفقیت ویرایش شد.');
     }
 
     public function destroy(Attribute $attribute): JsonResponse

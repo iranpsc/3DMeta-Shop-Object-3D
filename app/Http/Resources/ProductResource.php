@@ -29,6 +29,7 @@ class ProductResource extends ApiResource
             'url' => '/products/'.$this->sku,
             'short_description' => $this->short_description,
             'long_description' => $this->long_description,
+            'meta_description' => $this->meta_description,
             'price' => $this->price,
             'sale_price' => $this->sale_price,
             'final_price' => $this->final_price,

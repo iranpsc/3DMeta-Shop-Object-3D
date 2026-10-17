@@ -12,7 +12,15 @@ class AdminCategoryService
 {
     public function paginate(int $perPage = 10): LengthAwarePaginator
     {
-        return Category::with('parent')->latest()->paginate($perPage);
+        return Category::with('parent')
+            ->withCount([
+                'products',
+                'children as children_with_products_count' => function ($query) {
+                    $query->whereHas('products');
+                },
+            ])
+            ->latest()
+            ->paginate($perPage);
     }
 
     public function all(): Collection

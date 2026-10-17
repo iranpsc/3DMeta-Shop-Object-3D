@@ -31,6 +31,11 @@ class Tag extends Model implements Sitemapable
 
     public function getUrlAttribute()
     {
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+        if ($frontendUrl) {
+            return "{$frontendUrl}/tags/".trim($this->slug);
+        }
+
         return url('/tags/'.trim($this->slug));
     }
 

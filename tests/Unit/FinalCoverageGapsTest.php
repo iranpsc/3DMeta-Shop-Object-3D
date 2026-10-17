@@ -133,6 +133,10 @@ class FinalCoverageGapsTest extends TestCase
 
         $payload = (new TicketResource($ticket))->resolve();
         $this->assertSame('report.pdf', $payload['attachment_name']);
+        $this->assertSame(
+            route('api.v1.tickets.attachment', ['ticket' => $ticket->id]),
+            $payload['attachment_url']
+        );
     }
 
     public function test_product_import_empty_sku_existing_attribute_and_path_traversal_file(): void

@@ -23,6 +23,18 @@ class AdminAttributeService
         return Attribute::create($data);
     }
 
+    /**
+     * @param  array{name: string, slug: string}  $data
+     */
+    public function update(Attribute $attribute, array $data): Attribute
+    {
+        Gate::authorize('update', $attribute);
+
+        $attribute->update($data);
+
+        return $attribute;
+    }
+
     public function delete(Attribute $attribute): void
     {
         $attribute->delete();

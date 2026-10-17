@@ -1,16 +1,15 @@
 # -----------------------------------------------------------------------------
 # Laravel API — multi-stage production image (Dokploy-ready)
-# Base images: Arvan Cloud Docker mirror (docker.arvancloud.ir)
+# Base images: official Docker Hub (composer, php)
 # -----------------------------------------------------------------------------
 
 ARG PHP_VERSION=8.4
 ARG COMPOSER_VERSION=2
-ARG ARVAN_REGISTRY=docker.arvancloud.ir
 
 # =============================================================================
 # Stage 1: Composer dependencies (cached layer)
 # =============================================================================
-FROM ${ARVAN_REGISTRY}/composer:${COMPOSER_VERSION} AS vendor
+FROM composer:${COMPOSER_VERSION} AS vendor
 
 WORKDIR /app
 
@@ -48,19 +47,13 @@ RUN composer dump-autoload --optimize --classmap-authoritative --no-dev --no-scr
 # =============================================================================
 # Stage 2: Production runtime (PHP-FPM + Nginx + Supervisor)
 # =============================================================================
-FROM ${ARVAN_REGISTRY}/php:${PHP_VERSION}-fpm-alpine AS production
+FROM php:${PHP_VERSION}-fpm-alpine AS production
 
 LABEL org.opencontainers.image.title="3drgb-backend-api" \
       org.opencontainers.image.description="3D RGB Laravel backend API" \
       org.opencontainers.image.source="https://github.com/iranpsc/3drgb"
 
 WORKDIR /var/www/html
-
-# Faster Alpine package installs via Arvan mirror
-# Original: https://dl-cdn.alpinelinux.org/alpine/vX.Y/...
-# Target:   https://mirror.arvancloud.ir/alpine/vX.Y/...
-RUN sed -i 's|https://dl-cdn.alpinelinux.org|https://mirror.arvancloud.ir|g' /etc/apk/repositories \
-    || true
 
 # System deps + PHP extensions required by Laravel / Excel / images
 RUN apk add --no-cache \
@@ -121,6 +114,12 @@ COPY --chown=www-data:www-data routes ./routes
 COPY --chown=www-data:www-data storage ./storage
 
 COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
+
+# Drop any host-copied bootstrap/cache manifests (may reference require-dev
+# providers like Debugbar that are absent from this --no-dev image).
+RUN rm -f bootstrap/cache/*.php \
+    && mkdir -p bootstrap/cache \
+    && chown -R www-data:www-data bootstrap/cache
 
 RUN mkdir -p \
         storage/framework/cache/data \
