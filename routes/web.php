@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ApiDocumentationController;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
@@ -18,6 +19,9 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 | Backend web endpoints kept after Livewire removal. Page UI lives in Next.js.
 |
 */
+
+Route::get('/docs', [ApiDocumentationController::class, 'ui'])->name('api.docs');
+Route::get('/docs/openapi.yaml', [ApiDocumentationController::class, 'specification'])->name('api.docs.specification');
 
 Route::middleware('guest')->prefix('auth')->as('auth.')->group(function () {
     Route::get('/register', RegisterController::class)->name('register');
