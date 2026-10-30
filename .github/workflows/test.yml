@@ -779,7 +779,7 @@ jobs:
     needs:
       - laravel-tests
 
-    if: ${{ always() && needs.laravel-tests.result == 'failure' }}
+    if: ${{ always() && needs.laravel-tests.result == 'failure' && secrets.SLACK_WEBHOOK_URL != '' }}
 
     steps:
 
