@@ -779,11 +779,15 @@ jobs:
     needs:
       - laravel-tests
 
-    if: ${{ always() && needs.laravel-tests.result == 'failure' && secrets.SLACK_WEBHOOK_URL != '' }}
+    if: ${{ always() && needs.laravel-tests.result == 'failure' }}
+
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     steps:
 
       - name: 🔔 Send Slack Notification
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         uses: slackapi/slack-github-action@v2.1.1
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
