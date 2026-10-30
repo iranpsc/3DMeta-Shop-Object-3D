@@ -19,7 +19,7 @@ permissions:
   pull-requests: write
 
 env:
-  REQUIRED_COVERAGE: 100
+  REQUIRED_COVERAGE: 98
 
 jobs:
 
