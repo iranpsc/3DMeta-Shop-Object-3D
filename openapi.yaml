@@ -52,7 +52,7 @@ components:
     ApiResponse:
       type: object
       properties:
-        data: { nullable: true }
+        data: { type: [object, 'null'] }
         message: { type: string }
         errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
     PaginatedResponse:
@@ -313,7 +313,7 @@ components:
     AdminProductResponse:
       type: object
       properties:
-        data: { allOf: [{ $ref: '#/components/schemas/Product' }], description: Admin product fields also include published, delivery_time, and category_id. }
+        data: { allOf: [{ $ref: '#/components/schemas/Product' }], description: 'Admin product fields also include published, delivery_time, and category_id.' }
     ValidationErrorBody:
       type: object
       properties:
