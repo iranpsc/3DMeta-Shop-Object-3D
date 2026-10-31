@@ -9,7 +9,7 @@ class ApiDocumentationTest extends TestCase
 {
     public function test_swagger_ui_is_available(): void
     {
-        $this->get('/docs')
+        $this->get('/')
             ->assertOk()
             ->assertHeader('content-type', 'text/html; charset=UTF-8')
             ->assertSee('3D RGB API Documentation')
