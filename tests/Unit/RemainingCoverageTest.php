@@ -374,12 +374,7 @@ class RemainingCoverageTest extends TestCase
             ],
         ]);
 
-        try {
-            $response->url();
-            $this->fail('Expected TypeError');
-        } catch (\TypeError) {
-            $this->assertTrue(true);
-        }
+        $this->assertNull($response->url());
     }
 
     public function test_rate_limiter_callback_executes(): void

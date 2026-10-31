@@ -66,9 +66,9 @@ class RequestResponse
     /**
      * Get the URL for redirecting the user to complete the payment.
      *
-     * @return string The redirect URL.
+     * @return string|null The redirect URL, or null when the payment request failed.
      */
-    public function url(): string
+    public function url(): ?string
     {
         if (! $this->success()) {
             return null;
