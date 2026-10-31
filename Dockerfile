@@ -112,6 +112,7 @@ COPY --chown=www-data:www-data public ./public
 COPY --chown=www-data:www-data resources ./resources
 COPY --chown=www-data:www-data routes ./routes
 COPY --chown=www-data:www-data storage ./storage
+COPY --chown=www-data:www-data openapi.yaml ./openapi.yaml
 
 COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
 
