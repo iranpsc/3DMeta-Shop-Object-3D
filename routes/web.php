@@ -20,7 +20,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 |
 */
 
-Route::get('/docs', [ApiDocumentationController::class, 'ui'])->name('api.docs');
+Route::get('/', [ApiDocumentationController::class, 'ui'])->name('api.docs');
 Route::get('/docs/openapi.yaml', [ApiDocumentationController::class, 'specification'])->name('api.docs.specification');
 
 Route::middleware('guest')->prefix('auth')->as('auth.')->group(function () {
