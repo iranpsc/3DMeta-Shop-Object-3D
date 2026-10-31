@@ -55,6 +55,44 @@ components:
         data: { type: [object, 'null'] }
         message: { type: string }
         errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
+    AvatarSummary:
+      type: object
+      required: [id, name, thumbnail_url, category]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        thumbnail_url: { type: [string, 'null'], format: uri }
+        category: { type: [string, 'null'] }
+    AvatarListResponse:
+      type: object
+      properties:
+        data: { type: array, items: {$ref: '#/components/schemas/AvatarSummary'} }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    AvatarDetailResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - {$ref: '#/components/schemas/AvatarSummary'}
+            - type: object
+              properties:
+                format: { type: [string, 'null'] }
+                file_size: { type: [string, integer, 'null'] }
+                rigging: { type: [string, 'null'] }
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+                      slug: { type: string }
+                      value: { type: [string, 'null'] }
+                tags: { type: array, items: {type: string} }
+                files: { type: array, items: {type: object} }
     PaginatedResponse:
       type: object
       properties:
@@ -892,6 +930,46 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /avatars:
+    get:
+      tags: [Avatars]
+      summary: List public default avatars
+      description: Returns avatar products in the avatar catalog that are not owned by any user.
+      parameters:
+        - {in: query, name: category, required: false, schema: {type: string}}
+        - {in: query, name: page, required: false, schema: {type: integer, minimum: 1, default: 1}}
+        - {in: query, name: limit, required: false, schema: {type: integer, minimum: 1, maximum: 100, default: 15}}
+      responses:
+        '200':
+          description: Paginated default avatar summaries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarListResponse'
+  /avatars/{avatar}:
+    get:
+      tags: [Avatars]
+      summary: Get a public default avatar
+      parameters: [{in: path, name: avatar, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: Avatar metadata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AvatarDetailResponse'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /avatars/{avatar}/download:
+    get:
+      tags: [Avatars]
+      summary: Download a public default avatar model
+      parameters: [{in: path, name: avatar, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: GLB or GLTF model file
+          content:
+            model/gltf-binary: {schema: {type: string, format: binary}}
+            model/gltf+json: {schema: {type: string, format: binary}}
+        '404': {$ref: '#/components/responses/NotFound'}
   /tickets:
     get:
       tags: [Tickets]
