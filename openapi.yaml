@@ -1,0 +1,1822 @@
+openapi: 3.1.0
+info:
+  title: 3D RGB Backend API
+  version: 1.0.0
+  description: |
+    OpenAPI documentation for the 3D RGB Laravel backend. The API is versioned under `/api/v1`.
+    Cookie-based Sanctum authentication is intended for the first-party SPA. Admin endpoints also
+    require a verified account with admin access. Asset proxy endpoints use HTTP Basic authentication.
+servers:
+  - url: /api/v1
+    description: Current backend host
+security: []
+components:
+  securitySchemes:
+    sanctumCookie:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+      description: First-party Laravel Sanctum session cookie.
+    basicAuth:
+      type: http
+      scheme: basic
+      description: One-time Basic authentication for asset proxy endpoints.
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string }
+  responses:
+    Unauthorized:
+      description: Authentication is missing or invalid.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+    Forbidden:
+      description: User lacks verified or admin access.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+    ValidationError:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationErrorBody' }
+    NotFound:
+      description: Requested resource was not found.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        data: { type: [object, 'null'] }
+        message: { type: string }
+        errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
+    AvatarSummary:
+      type: object
+      required: [id, name, thumbnail_url, category]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        thumbnail_url: { type: [string, 'null'], format: uri }
+        category: { type: [string, 'null'] }
+    AvatarListResponse:
+      type: object
+      properties:
+        data: { type: array, items: {$ref: '#/components/schemas/AvatarSummary'} }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    AvatarDetailResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - {$ref: '#/components/schemas/AvatarSummary'}
+            - type: object
+              properties:
+                format: { type: [string, 'null'] }
+                file_size: { type: [string, integer, 'null'] }
+                rigging: { type: [string, 'null'] }
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+                      slug: { type: string }
+                      value: { type: [string, 'null'] }
+                tags: { type: array, items: {type: string} }
+                files: { type: array, items: {type: object} }
+    PaginatedResponse:
+      type: object
+      properties:
+        data: { type: array, items: {} }
+        meta: { $ref: '#/components/schemas/Pagination' }
+        links: { type: object, additionalProperties: { type: [string, 'null'] } }
+    Pagination:
+      type: object
+      properties:
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        sku: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        url: { type: string }
+        short_description: { type: string }
+        long_description: { type: string }
+        meta_description: { type: string }
+        price: { type: number }
+        sale_price: { type: [number, 'null'] }
+        final_price: { type: number }
+        discount: { type: number }
+        is_free: { type: boolean }
+        stock_status: { type: boolean }
+        quantity: { type: number }
+        customer_can_add_review: { type: boolean }
+        rating_avg: { type: [number, 'null'] }
+        reviews_count: { type: integer }
+        approved_reviews_count: { type: integer }
+        image: { type: [object, 'null'], additionalProperties: true }
+        images: { type: array, items: { type: object, additionalProperties: true } }
+        files: { type: array, items: { type: object, additionalProperties: true } }
+        tags: { type: array, items: { $ref: '#/components/schemas/Tag' } }
+        attributes: { type: array, items: { type: object, additionalProperties: true } }
+        category: { $ref: '#/components/schemas/Category' }
+    Category:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        url: { type: string }
+        products_count: { type: integer }
+        children: { type: array, items: { type: object, additionalProperties: true } }
+    Tag:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string }
+        avatar: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        email_verified_at: { type: [string, 'null'], format: date-time }
+    Ticket:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        message: { type: string }
+        priority: { type: string, enum: [low, medium, high] }
+        status: { type: string, enum: [open, closed] }
+        response_status: { type: string, enum: [pending, replied] }
+        attachment_url: { type: [string, 'null'], format: uri }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CartSnapshot:
+      type: object
+      properties:
+        items: { type: array, items: { type: object, properties: { product_id: {type: integer}, quantity: {type: integer} } } }
+        products: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        count: { type: integer }
+        total_price: { type: number }
+    CheckoutAccountInput:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [login, register] }
+        intended: { type: [string, 'null'], format: uri }
+    AddToCartInput:
+      type: object
+      properties:
+        quantity: { type: integer, minimum: 1, default: 1 }
+    UpdateCartInput:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: { type: integer, minimum: 1 }
+    ReviewInput:
+      type: object
+      required: [comment, rating]
+      properties:
+        comment: { type: string, minLength: 3, maxLength: 500 }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+    ReviewReplyInput:
+      type: object
+      required: [comment]
+      properties:
+        comment: { type: string, minLength: 3, maxLength: 500 }
+    TicketInput:
+      type: object
+      required: [title, message, priority]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 255 }
+        message: { type: string, minLength: 3, maxLength: 5000 }
+        priority: { type: string, enum: [low, medium, high] }
+        attachment: { type: string, format: binary, description: Optional PDF/JPG/PNG up to 1 MiB. }
+    TicketResponseInput:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, maxLength: 500 }
+        attachment: { type: string, format: binary, description: Optional file up to 1 MiB. }
+    ProfileInput:
+      type: object
+      required: [name, email, phone]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 255 }
+        email: { type: string, format: email, maxLength: 255 }
+        phone: { type: string, description: Iranian mobile number. }
+        avatar: { type: string, format: binary, description: Optional image up to 2024 KiB. }
+    StoreAvatarInput:
+      type: object
+      required: [name, avatar_url, avatar_image_url]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 255 }
+        avatar_url: { type: string, format: uri }
+        avatar_image_url: { type: string, format: uri }
+    ContactInput:
+      type: object
+      required: [name, email, phone, subject, message]
+      properties:
+        name: { type: string, maxLength: 255 }
+        email: { type: string, format: email }
+        phone: { type: string, description: Iranian mobile number. }
+        subject: { type: string, maxLength: 255 }
+        message: { type: string, maxLength: 5000 }
+    SubmitOrderInput:
+      type: object
+      required: [subject, message]
+      properties:
+        name: { type: string, maxLength: 255, description: Required for guests. }
+        email: { type: string, format: email, maxLength: 255, description: Required for guests. }
+        phone: { type: string, maxLength: 255, description: Required for guests. }
+        subject: { type: string, maxLength: 255 }
+        message: { type: string }
+        attachment: { type: string, format: binary, description: Optional file up to 1 MiB. }
+    AdminCategoryInput:
+      type: object
+      required: [name, slug, description]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 255 }
+        slug: { type: string, minLength: 3, maxLength: 255 }
+        parent_id: { type: [integer, 'null'] }
+        description: { type: string, minLength: 3, maxLength: 255 }
+        image: { type: string, format: binary, description: Optional image up to 1 MiB. }
+    AdminTagInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 255 }
+        slug: { type: string, minLength: 3, maxLength: 255 }
+    AdminAttributeInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string, maxLength: 255 }
+        slug: { type: string, maxLength: 255 }
+    AdminReviewInput:
+      type: object
+      required: [comment, rating]
+      properties:
+        comment: { type: string, minLength: 3, maxLength: 500 }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+    AdminReplyInput:
+      type: object
+      required: [comment]
+      properties:
+        comment: { type: string, minLength: 3, maxLength: 1000 }
+    AdminProductInput:
+      type: object
+      required: [category_id, name, sku, slug, short_description, long_description, customer_can_add_review, price, published, images, files, tags, attributes, meta_description, meta_keywords]
+      properties:
+        category_id: { type: integer }
+        name: { type: string, maxLength: 255 }
+        sku: { type: string, maxLength: 255 }
+        slug: { type: string, maxLength: 255 }
+        short_description: { type: string, maxLength: 255 }
+        long_description: { type: string, maxLength: 5000 }
+        stock_status: { type: boolean }
+        quantity: { type: number, minimum: 0 }
+        delivery_time: { type: number, minimum: 0 }
+        customer_can_add_review: { type: boolean }
+        price: { type: number, minimum: 0 }
+        sale_price: { type: [number, 'null'], minimum: 0, description: Must not exceed price. }
+        published: { type: boolean }
+        images: { type: array, minItems: 1, items: { type: string, format: binary, description: Image up to 5 MiB. } }
+        files: { type: array, minItems: 1, maxItems: 20, items: { type: object, required: [path, name, mime_type, size], properties: {path: {type: string}, name: {type: string}, mime_type: {type: string}, size: {type: string}} } }
+        tags: { type: array, minItems: 1, items: { type: integer } }
+        attributes: { type: array, minItems: 1, items: { type: object, required: [id, value], properties: {id: {type: integer}, value: {type: string, maxLength: 255}} } }
+        meta_description: { type: string, maxLength: 255 }
+        meta_keywords: { type: string, maxLength: 255 }
+    ImportProductsInput:
+      type: object
+      required: [file]
+      properties:
+        file: { type: string, format: binary, description: XLSX/XLS/CSV file. }
+    UploadInput:
+      type: object
+      required: [file]
+      properties:
+        file: { type: string, format: binary, description: JPG/PNG/FBX/GLTF/GLB/BIN up to 100 MiB. }
+    DiscardUploadInput:
+      type: object
+      required: [path, name]
+      properties:
+        path: { type: string }
+        name: { type: string }
+    ProductResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Product' }
+    UserResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/User' }
+    TicketResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Ticket' }
+    CartResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/CartSnapshot' }
+    CategoryResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Category' }
+    TagResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Tag' }
+    AdminProductResponse:
+      type: object
+      properties:
+        data: { allOf: [{ $ref: '#/components/schemas/Product' }], description: 'Admin product fields also include published, delivery_time, and category_id.' }
+    ValidationErrorBody:
+      type: object
+      properties:
+        message: { type: string }
+        errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
+paths:
+  /user:
+    get:
+      tags: [Authentication]
+      summary: Get the current authenticated user
+      security: [{ sanctumCookie: [] }]
+      responses:
+        '200':
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /logout:
+    post:
+      tags: [Authentication]
+      summary: End the current session
+      security: [{ sanctumCookie: [] }]
+      responses:
+        '200':
+          description: Session ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /products:
+    get:
+      tags: [Products]
+      summary: List published products
+      parameters:
+        - {in: query, name: sort, schema: {type: string}, description: Sort order (defaults to newest).}
+        - {in: query, name: take, schema: {type: integer}}
+        - {in: query, name: search, schema: {type: string}}
+        - {in: query, name: category, schema: {type: string}}
+        - {in: query, name: tag, schema: {type: string}}
+        - {in: query, name: tags, schema: {type: string}, description: Comma-separated tag filters.}
+        - {in: query, name: price_min, schema: {type: number}}
+        - {in: query, name: price_max, schema: {type: number}}
+        - {in: query, name: per_page, schema: {type: integer, default: 15}}
+        - {in: query, name: page, schema: {type: integer, minimum: 1}, description: Pagination page number.}
+      responses:
+        '200':
+          description: Product list; paginated when applicable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /products/store-filters:
+    get:
+      tags: [Products]
+      summary: Get available product filter options
+      responses:
+        '200':
+          description: Product filter data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /products/{sku}:
+    get:
+      tags: [Products]
+      summary: Get a product by SKU
+      parameters: [{in: path, name: sku, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /products/{sku}/reviews:
+    get:
+      tags: [Reviews]
+      summary: List approved reviews for a product
+      parameters: [{in: path, name: sku, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: Reviews and rating summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [Reviews]
+      summary: Submit a product review
+      description: Requires a Sanctum session. Review payload fields depend on validation rules.
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: sku, required: true, schema: {type: string}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '201':
+          description: Review accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reviews/{review}:
+    put:
+      tags: [Reviews]
+      summary: Update a review
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '200':
+          description: Review updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reviews/{review}/replies:
+    post:
+      tags: [Reviews]
+      summary: Reply to a review
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewReplyInput'
+      responses:
+        '201':
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /review-replies/{reply}:
+    put:
+      tags: [Reviews]
+      summary: Update a review reply
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: reply, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewReplyInput'
+      responses:
+        '200':
+          description: Reply updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /categories/popular:
+    get:
+      tags: [Categories]
+      summary: List popular categories
+      parameters:
+        - in: query
+          name: take
+          required: false
+          description: Maximum popular categories; defaults to 12.
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Popular categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /categories/top-level:
+    get:
+      tags: [Categories]
+      summary: List top-level categories
+      responses:
+        '200':
+          description: Top-level categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /categories/{slug}:
+    get:
+      tags: [Categories]
+      summary: Get a category by slug
+      parameters: [{in: path, name: slug, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: Category and descendants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /tags/{slug}/products:
+    get:
+      tags: [Tags]
+      summary: List products for a tag
+      parameters: [{in: path, name: slug, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: Tagged products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /cart:
+    get:
+      tags: [Cart]
+      summary: Show the current cart
+      responses:
+        '200':
+          description: Cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /cart/{product}:
+    post:
+      tags: [Cart]
+      summary: Add a product to the cart
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartInput'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      tags: [Cart]
+      summary: Update a cart item
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartInput'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Cart]
+      summary: Remove a cart item
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /checkout:
+    get:
+      tags: [Checkout]
+      summary: Show checkout details
+      responses:
+        '200':
+          description: Checkout data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /checkout/account:
+    post:
+      tags: [Checkout]
+      summary: Create or associate a checkout account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutAccountInput'
+      responses:
+        '200':
+          description: Account and checkout state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /checkout/payment:
+    post:
+      tags: [Checkout]
+      summary: Begin payment for the current order
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Payment redirect information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /checkout/verify:
+    get:
+      tags: [Checkout]
+      summary: Verify a payment gateway return
+      description: Uses the gateway return token and order state; auth is optional.
+      parameters:
+        - in: query
+          name: Token
+          required: true
+          description: Required payment gateway verification token.
+          schema: {type: string}
+        - in: query
+          name: status
+          required: false
+          description: Gateway transaction status.
+          schema: {type: string}
+        - in: query
+          name: OrderId
+          required: false
+          description: Gateway order ID.
+          schema: {type: string}
+        - in: query
+          name: TerminalNo
+          required: false
+          description: Gateway terminal number.
+          schema: {type: string}
+        - in: query
+          name: RRN
+          required: false
+          description: Retrieval reference number.
+          schema: {type: string}
+        - in: query
+          name: HashCardNumber
+          required: false
+          description: Masked card hash supplied by gateway.
+          schema: {type: string}
+        - in: query
+          name: Amount
+          required: false
+          description: Payment amount supplied by gateway.
+          schema: {type: string}
+      responses:
+        '200':
+          description: Payment verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /orders/{order}/pay:
+    post:
+      tags: [Checkout]
+      summary: Retry payment for an order
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: order, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Payment redirect information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /contact-us:
+    post:
+      tags: [Contact]
+      summary: Submit a contact message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactInput'
+      responses:
+        '201':
+          description: Message submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /submit-order:
+    post:
+      tags: [Orders]
+      summary: Submit an order request
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitOrderInput'
+      responses:
+        '201':
+          description: Order request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /build-package:
+    get:
+      tags: [Packages]
+      summary: Get build package metadata
+      responses:
+        '200':
+          description: Package metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /user/dashboard:
+    get:
+      tags: [User]
+      summary: Get the user dashboard
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /user/profile:
+    get:
+      tags: [User]
+      summary: Get the current profile
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [User]
+      summary: Update the current profile
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileInput'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /user/orders:
+    get:
+      tags: [User]
+      summary: List the current user's orders
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: User orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /user/orders/{order}:
+    get:
+      tags: [User]
+      summary: Get an order belonging to the current user
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: order, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /user/avatars:
+    get:
+      tags: [User]
+      summary: List saved avatars
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Avatar list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [User]
+      summary: Save an avatar
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreAvatarInput'
+      responses:
+        '201':
+          description: Avatar saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /avatars:
+    get:
+      tags: [Avatars]
+      summary: List public default avatars
+      description: Returns avatar products in the avatar catalog that are not owned by any user.
+      parameters:
+        - {in: query, name: category, required: false, schema: {type: string}}
+        - {in: query, name: page, required: false, schema: {type: integer, minimum: 1, default: 1}}
+        - {in: query, name: limit, required: false, schema: {type: integer, minimum: 1, maximum: 100, default: 15}}
+      responses:
+        '200':
+          description: Paginated default avatar summaries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarListResponse'
+  /avatars/{avatar}:
+    get:
+      tags: [Avatars]
+      summary: Get a public default avatar
+      parameters: [{in: path, name: avatar, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: Avatar metadata
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AvatarDetailResponse'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /avatars/{avatar}/download:
+    get:
+      tags: [Avatars]
+      summary: Download a public default avatar model
+      parameters: [{in: path, name: avatar, required: true, schema: {type: string}}]
+      responses:
+        '200':
+          description: GLB or GLTF model file
+          content:
+            model/gltf-binary: {schema: {type: string, format: binary}}
+            model/gltf+json: {schema: {type: string, format: binary}}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /tickets:
+    get:
+      tags: [Tickets]
+      summary: List the authenticated user's tickets
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Tickets]
+      summary: Create a ticket
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketInput'
+      responses:
+        '201':
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /tickets/{ticket}:
+    get:
+      tags: [Tickets]
+      summary: Get a ticket
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: ticket, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags: [Tickets]
+      summary: Update a ticket
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: ticket, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketInput'
+      responses:
+        '200':
+          description: Ticket updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Tickets]
+      summary: Delete a ticket
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: ticket, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Ticket deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /tickets/{ticket}/responses:
+    post:
+      tags: [Tickets]
+      summary: Add a response to a ticket
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: ticket, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketResponseInput'
+      responses:
+        '201':
+          description: Response added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /tickets/{ticket}/attachment:
+    get:
+      tags: [Tickets]
+      summary: Download a ticket attachment
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: ticket, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Attachment file
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+  /tickets/{ticket}/responses/{response}/attachment:
+    get:
+      tags: [Tickets]
+      summary: Download a ticket response attachment
+      security: [{sanctumCookie: []}]
+      parameters:
+        - {in: path, name: ticket, required: true, schema: {type: integer}}
+        - {in: path, name: response, required: true, schema: {type: integer}}
+      responses:
+        '200':
+          description: Attachment file
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+  /user/assets/categories:
+    get:
+      tags: [User Assets]
+      summary: List asset categories
+      security: [{basicAuth: []}]
+      parameters:
+        - in: query
+          name: defaults
+          required: false
+          description: When true, list default asset categories.
+          schema: {type: boolean}
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /user/assets/categories/{category}:
+    get:
+      tags: [User Assets]
+      summary: List products in an asset category
+      security: [{basicAuth: []}]
+      parameters: [{in: path, name: category, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /user/assets/products/{product}:
+    get:
+      tags: [User Assets]
+      summary: Get an asset product
+      security: [{basicAuth: []}]
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /user/assets/search:
+    get:
+      tags: [User Assets]
+      summary: Search asset products
+      security: [{basicAuth: []}]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          description: Required product name search query.
+          schema: {type: string}
+        - in: query
+          name: defaults
+          required: false
+          description: When true, search all products.
+          schema: {type: boolean}
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /user/assets/avatars:
+    get:
+      tags: [User Assets]
+      summary: List assets available as avatars
+      security: [{basicAuth: []}]
+      parameters:
+        - in: query
+          name: defaults
+          required: false
+          description: When true, list all available avatar products.
+          schema: {type: boolean}
+      responses:
+        '200':
+          description: Avatars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /user/assets/avatars/{avatar}:
+    get:
+      tags: [User Assets]
+      summary: Get an avatar asset
+      security: [{basicAuth: []}]
+      parameters: [{in: path, name: avatar, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Avatar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Get the admin dashboard
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/products:
+    get:
+      tags: [Admin]
+      summary: List products for administration
+      security: [{sanctumCookie: []}]
+      parameters:
+        - in: query
+          name: search
+          required: false
+          description: Filter by product name/SKU.
+          schema: {type: string}
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [Admin]
+      summary: Create a product
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminProductInput'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /admin/products/form-data:
+    get:
+      tags: [Admin]
+      summary: Get product form options
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Form options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/products/import:
+    post:
+      tags: [Admin]
+      summary: Import products
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportProductsInput'
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /admin/products/upload:
+    post:
+      tags: [Admin]
+      summary: Upload product assets
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadInput'
+      responses:
+        '200':
+          description: Upload result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /admin/products/temp-uploads/discard:
+    post:
+      tags: [Admin]
+      summary: Discard temporary product uploads
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscardUploadInput'
+      responses:
+        '200':
+          description: Temporary uploads discarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/products/{product}:
+    get:
+      tags: [Admin]
+      summary: Get an administered product
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags: [Admin]
+      summary: Update a product
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminProductInput'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    patch:
+      tags: [Admin]
+      summary: Partially update a product
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminProductInput'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Admin]
+      summary: Delete a product
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: product, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Product deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/products/{product}/images/{image}:
+    delete:
+      tags: [Admin]
+      summary: Delete a product image
+      security: [{sanctumCookie: []}]
+      parameters:
+        - {in: path, name: product, required: true, schema: {type: integer}}
+        - {in: path, name: image, required: true, schema: {type: integer}}
+      responses:
+        '200':
+          description: Image deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/products/{product}/files/{file}:
+    delete:
+      tags: [Admin]
+      summary: Delete a product file
+      security: [{sanctumCookie: []}]
+      parameters:
+        - {in: path, name: product, required: true, schema: {type: integer}}
+        - {in: path, name: file, required: true, schema: {type: integer}}
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/categories:
+    get:
+      tags: [Admin]
+      summary: List admin categories
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [Admin]
+      summary: Create a category
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminCategoryInput'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/categories/form-data:
+    get:
+      tags: [Admin]
+      summary: Get category form options
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Form options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/categories/{category}:
+    get:
+      tags: [Admin]
+      summary: Get a category
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: category, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags: [Admin]
+      summary: Update a category
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: category, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminCategoryInput'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    patch:
+      tags: [Admin]
+      summary: Partially update a category
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: category, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminCategoryInput'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Admin]
+      summary: Delete a category
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: category, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Category deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/tags:
+    get:
+      tags: [Admin]
+      summary: List admin tags
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [Admin]
+      summary: Create a tag
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminTagInput'
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/tags/{tag}:
+    delete:
+      tags: [Admin]
+      summary: Delete a tag
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: tag, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Tag deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/attributes:
+    get:
+      tags: [Admin]
+      summary: List product attributes
+      security: [{sanctumCookie: []}]
+      responses:
+        '200':
+          description: Attributes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [Admin]
+      summary: Create a product attribute
+      security: [{sanctumCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminAttributeInput'
+      responses:
+        '201':
+          description: Attribute created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/attributes/{attribute}:
+    put:
+      tags: [Admin]
+      summary: Update an attribute
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: attribute, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminAttributeInput'
+      responses:
+        '200':
+          description: Attribute updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Admin]
+      summary: Delete an attribute
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: attribute, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Attribute deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/reviews:
+    get:
+      tags: [Admin]
+      summary: List reviews for moderation
+      security: [{sanctumCookie: []}]
+      parameters:
+        - in: query
+          name: page
+          required: false
+          description: Pagination page number.
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/reviews/{review}:
+    put:
+      tags: [Admin]
+      summary: Update a review
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminReviewInput'
+      responses:
+        '200':
+          description: Review updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Admin]
+      summary: Delete a review
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Review deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/reviews/{review}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve a review
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Review approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/reviews/{review}/replies:
+    get:
+      tags: [Admin]
+      summary: List review replies
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Replies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags: [Admin]
+      summary: Add an admin review reply
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: review, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminReplyInput'
+      responses:
+        '201':
+          description: Reply created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/review-replies/{reply}:
+    put:
+      tags: [Admin]
+      summary: Update an admin review reply
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: reply, required: true, schema: {type: integer}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminReplyInput'
+      responses:
+        '200':
+          description: Reply updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Admin]
+      summary: Delete an admin review reply
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: reply, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Reply deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/review-replies/{reply}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve an admin review reply
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: reply, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Reply approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List users
+      security: [{sanctumCookie: []}]
+      parameters:
+        - in: query
+          name: page
+          required: false
+          description: Pagination page number.
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/orders:
+    get:
+      tags: [Admin]
+      summary: List submitted orders
+      security: [{sanctumCookie: []}]
+      parameters:
+        - in: query
+          name: page
+          required: false
+          description: Pagination page number.
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/orders/{order}:
+    get:
+      tags: [Admin]
+      summary: Get a submitted order
+      security: [{sanctumCookie: []}]
+      parameters: [{in: path, name: order, required: true, schema: {type: integer}}]
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /admin/contact-messages:
+    get:
+      tags: [Admin]
+      summary: List contact messages
+      security: [{sanctumCookie: []}]
+      parameters:
+        - in: query
+          name: page
+          required: false
+          description: Pagination page number.
+          schema: {type: integer}
+      responses:
+        '200':
+          description: Contact messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+

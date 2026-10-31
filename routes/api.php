@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\AdminSubmitOrderController;
 use App\Http\Controllers\Api\V1\AdminTagController;
 use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\AvatarController;
 use App\Http\Controllers\Api\V1\BuildPackageController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CategoryController;
@@ -89,6 +90,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/store-filters', [ProductController::class, 'storeFilters']);
     Route::get('/products/{sku}', [ProductController::class, 'show'])->name('api.v1.products.show');
     Route::get('/products/{sku}/reviews', [ProductController::class, 'reviews']);
+
+    Route::get('/avatars', [AvatarController::class, 'index']);
+    Route::get('/avatars/{avatar}/download', [AvatarController::class, 'download']);
+    Route::get('/avatars/{avatar}', [AvatarController::class, 'show']);
 
     Route::get('/categories/popular', [CategoryController::class, 'popular']);
     Route::get('/categories/top-level', [CategoryController::class, 'topLevel']);
