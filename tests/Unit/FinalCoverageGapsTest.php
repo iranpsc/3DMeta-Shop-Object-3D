@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use ReflectionMethod;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class FinalCoverageGapsTest extends TestCase
@@ -60,7 +61,7 @@ class FinalCoverageGapsTest extends TestCase
                 'tags' => [$tag->id],
                 'attributes' => [['id' => $attribute->id, 'value' => 'X']],
                 'files' => [[
-                    'path' => 'upload/x/',
+                    'path' => 'products/',
                     'name' => 'bad.exe',
                     'mime_type' => 'application/octet-stream',
                     'size' => '1 KB',
@@ -274,6 +275,30 @@ class FinalCoverageGapsTest extends TestCase
         );
 
         $this->assertFalse($result);
+    }
+
+    public function test_admin_product_service_rejects_non_staged_file_paths(): void
+    {
+        $service = $this->app->make(AdminProductService::class);
+        $method = new ReflectionMethod(AdminProductService::class, 'moveUploadedFile');
+        $method->setAccessible(true);
+
+        $this->expectException(HttpException::class);
+
+        $method->invoke(
+            $service,
+            Product::factory()->create([
+                'category_id' => Category::factory()->create()->id,
+            ]),
+            [
+                'path' => 'products/',
+                'name' => 'model.glb',
+                'mime_type' => 'model/gltf-binary',
+                'size' => '1 KB',
+            ],
+            'download/test',
+            0
+        );
     }
 
     public function test_checkout_prepare_order_items_skips_missing_cart_products(): void
