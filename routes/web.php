@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApiDocumentationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FileUploadController;
@@ -8,7 +9,6 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ApiDocumentationController;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
@@ -32,7 +32,11 @@ Route::middleware('guest')->prefix('auth')->as('auth.')->group(function () {
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
 Route::get('/download/{file}', function (Request $request, File $file) {
-    return response()->download(storage_path("app/{$file->path}"), $file->name);
+    $path = storage_path("app/{$file->path}");
+
+    abort_unless(is_file($path), 404);
+
+    return response()->download($path, $file->name);
 })->middleware('signed')->name('files.download');
 
 Route::middleware(['auth'])->group(function () {

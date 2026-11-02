@@ -6,6 +6,7 @@ use App\Rules\SecureFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Pion\Laravel\ChunkUpload\Exceptions\UploadFailedException;
@@ -90,6 +91,7 @@ class FileUploadController extends Controller
         // Build the file path
         $filePath = "upload/{$mime}/{$dateFolder}/";
         $finalPath = storage_path('app/'.$filePath);
+        File::ensureDirectoryExists($finalPath);
 
         // move the file name
         $file->move($finalPath, $fileName);
