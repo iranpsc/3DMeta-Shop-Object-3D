@@ -324,6 +324,20 @@ class ProductTest extends TestCase
         $this->assertStringContainsString('signature=', $url);
     }
 
+    public function test_missing_product_download_file_returns_404(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id]);
+        $file = $product->files()->create([
+            'name' => 'missing-model.glb',
+            'path' => 'products/missing-model.glb',
+            'type' => 'model/gltf-binary',
+            'size' => '1 MB',
+        ]);
+
+        $this->get($file->url)->assertNotFound();
+    }
+
     public function test_authenticated_purchased_user_can_download_paid_product(): void
     {
         $user = User::factory()->create();
