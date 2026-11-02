@@ -92,6 +92,13 @@ class AdminProductTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseHas('products', ['sku' => '3D-rgb-10001']);
+
+        $product = Product::where('sku', '3D-rgb-10001')->firstOrFail();
+        $file = $product->files()->sole();
+
+        $this->assertFileDoesNotExist(storage_path('app/'.$uploadPath.'model.glb'));
+        $this->assertFileExists(storage_path('app/'.$file->path));
+        $this->assertStringStartsWith('download/', $file->path);
     }
 
     public function test_admin_can_discard_temp_upload(): void
