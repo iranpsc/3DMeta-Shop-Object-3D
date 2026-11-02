@@ -59,8 +59,9 @@ class AdminProductTest extends TestCase
         $category = Category::factory()->create();
         $tag = Tag::factory()->create();
         $attribute = Attribute::factory()->create();
-        $uploadPath = 'upload/image-jpeg/2026-07-28/';
-        $this->seedUploadFile($uploadPath, 'model.glb');
+        $uploadPath = 'upload/application-octet-stream/2026-11-02/';
+        $filename = '3d-1384_17172df4b802a0bed2c5cfb0340cfc7a.fbx';
+        $this->seedUploadFile($uploadPath, $filename);
 
         $this->actingAsAdminApiUser()
             ->post('/api/v1/admin/products', [
@@ -82,9 +83,9 @@ class AdminProductTest extends TestCase
                 'images' => [UploadedFile::fake()->image('product.jpg')],
                 'files' => json_encode([[
                     'path' => $uploadPath,
-                    'name' => 'model.glb',
-                    'mime_type' => 'image-jpeg',
-                    'size' => '10 KB',
+                    'name' => $filename,
+                    'mime_type' => 'application-octet-stream',
+                    'size' => '241.68 KB',
                 ]]),
                 'tags' => json_encode([$tag->id]),
                 'attributes' => json_encode([['id' => $attribute->id, 'value' => 'Large']]),
@@ -96,7 +97,7 @@ class AdminProductTest extends TestCase
         $product = Product::where('sku', '3D-rgb-10001')->firstOrFail();
         $file = $product->files()->sole();
 
-        $this->assertFileDoesNotExist(storage_path('app/'.$uploadPath.'model.glb'));
+        $this->assertFileDoesNotExist(storage_path('app/'.$uploadPath.$filename));
         $this->assertFileExists(storage_path('app/'.$file->path));
         $this->assertStringStartsWith('download/', $file->path);
     }
@@ -529,6 +530,44 @@ class AdminProductTest extends TestCase
                 'attributes' => json_encode([['id' => $attribute->id, 'value' => 'Large']]),
             ], ['Accept' => 'application/json'])
             ->assertStatus(422);
+    }
+
+    public function test_create_product_rejects_a_final_product_path_as_a_staged_file(): void
+    {
+        Storage::fake('public');
+        $category = Category::factory()->create();
+        $tag = Tag::factory()->create();
+        $attribute = Attribute::factory()->create();
+
+        $this->actingAsAdminApiUser()
+            ->post('/api/v1/admin/products', [
+                'category_id' => $category->id,
+                'sku' => '3D-rgb-30003',
+                'name' => 'Wrong Source Path',
+                'slug' => 'wrong-source-path',
+                'short_description' => 'Short',
+                'long_description' => 'Long description',
+                'stock_status' => 0,
+                'quantity' => 0,
+                'delivery_time' => 0,
+                'customer_can_add_review' => 1,
+                'price' => 100000,
+                'sale_price' => 90000,
+                'published' => 1,
+                'meta_description' => 'Meta desc',
+                'meta_keywords' => 'meta, keywords',
+                'images' => [UploadedFile::fake()->image('product.jpg')],
+                'files' => json_encode([[
+                    'path' => 'products/',
+                    'name' => 'incorrectly-staged.glb',
+                    'mime_type' => 'model-gltf',
+                    'size' => '10 KB',
+                ]]),
+                'tags' => json_encode([$tag->id]),
+                'attributes' => json_encode([['id' => $attribute->id, 'value' => 'Large']]),
+            ], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('files.0.path');
     }
 
     public function test_create_product_rejects_path_traversal_in_files(): void

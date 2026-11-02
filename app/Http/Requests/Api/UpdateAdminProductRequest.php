@@ -47,9 +47,17 @@ class UpdateAdminProductRequest extends FormRequest
             'sale_price' => 'nullable|numeric|min:0|lte:price',
             'published' => 'required|boolean',
             'images' => 'nullable|array|max:3',
-            'images.*' => 'nullable|image|max:1024',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png|max:1024',
             'files' => 'nullable|array|max:20',
-            'files.*.path' => 'required_with:files|string',
+            'files.*.path' => [
+                'required_with:files',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if (! is_string($value) || ! str_starts_with($value, 'upload/') || str_contains($value, '..')) {
+                        $fail(__('Product files must reference a staged upload.'));
+                    }
+                },
+            ],
             'files.*.name' => [
                 'required_with:files',
                 'string',
